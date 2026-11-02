@@ -37,6 +37,9 @@ function sanitize(raw: Record<string, unknown>): Partial<Mission> {
   }
   if (typeof raw['capture'] === 'boolean') m.capture = raw['capture'];
   if (typeof raw['calendar'] === 'string' && CALENDARS.has(raw['calendar'])) m.calendar = raw['calendar'] as CalendarName;
+  if (raw['maxFlightDays'] === null || (isFiniteNumber(raw['maxFlightDays']) && raw['maxFlightDays'] > 0)) {
+    m.maxFlightDays = raw['maxFlightDays'] as number | null;
+  }
   return m;
 }
 
@@ -50,6 +53,7 @@ export function missionToQueryParams(m: Mission): Record<string, string> {
     orbit: String(m.initialAltitudeKm),
     capture: m.capture ? String(m.finalAltitudeKm) : 'none',
     calendar: m.calendar,
+    ...(m.maxFlightDays !== null ? { maxflight: String(m.maxFlightDays) } : {}),
   };
 }
 
@@ -66,6 +70,8 @@ export function missionFromQueryParams(get: (key: string) => string | null): Par
     finalAltitudeKm: parseNumber(capture),
     capture: capture === 'none' ? false : parseNumber(capture) !== undefined ? true : undefined,
     calendar: get('calendar'),
+    // A complete search (as written by missionToQueryParams) without a limit means "no limit".
+    maxFlightDays: get('maxflight') === null ? (isBody(get('from')) ? null : undefined) : parseNumber(get('maxflight')),
   });
 }
 

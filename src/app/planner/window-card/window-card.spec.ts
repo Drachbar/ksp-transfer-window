@@ -47,6 +47,17 @@ describe('WindowCard', () => {
     expect(field(el, 'ejection-angle')).toBe(formatAngle(window.transfer.ejectionAngle));
   });
 
+  it('names the parking orbit the burn starts from', async () => {
+    expect((await render()).querySelector('#step-burn')!.textContent).toContain('from a 100 km orbit');
+  });
+
+  it('does not talk about a "0 km orbit" when there is no parking orbit', async () => {
+    const el = await render(window, { ...DEFAULT_MISSION, initialAltitudeKm: 0 });
+    const heading = el.querySelector('#step-burn')!.textContent!;
+    expect(heading).not.toContain('0 km');
+    expect(heading).toContain('Ejection burn');
+  });
+
   it('shows the phase angle', async () => {
     expect(field(await render(), 'phase-angle')).toBe(formatAngle(window.phaseAngle));
   });
@@ -76,6 +87,43 @@ describe('WindowCard', () => {
   it('counts down from the current game time', async () => {
     const el = await render(window, { ...DEFAULT_MISSION, day: 11 });
     expect(field(el, 'countdown')).toBe(`in ${formatDuration(window.departureTime - 10 * 6 * 3600, KERBIN_CALENDAR)}`);
+  });
+
+  describe('mid-course plane change', () => {
+    const alternative: TransferWindow = {
+      ...window,
+      deltaV: window.deltaV - 300,
+      transfer: { ...window.transfer, deltaV: window.deltaV - 300, planeChangeDeltaV: 250, planeChangeTime: window.departureTime + 100 * 21600, planeChangeAngle: 0.1 },
+    };
+
+    it('suggests a cheaper transfer with a plane change, and offers to show it', async () => {
+      const el = await render({ ...window, planeChangeAlternative: alternative });
+      const tip = el.querySelector('[data-testid="plane-change-tip"]')!;
+      const percent = Math.round((300 / window.deltaV) * 100);
+      expect(tip.textContent).toContain(`saves ${formatDeltaV(300)} (${percent}%)`);
+      const shown: TransferWindow[] = [];
+      fixture.componentInstance.showAlternative.subscribe((w) => shown.push(w));
+      tip.querySelector('button')!.click();
+      expect(shown).toEqual([alternative]);
+    });
+
+    it('does not suggest anything without an alternative', async () => {
+      expect((await render()).querySelector('[data-testid="plane-change-tip"]')).toBeNull();
+    });
+
+    it('adds the plane change burn as a step when the transfer has one', async () => {
+      const el = await render(alternative);
+      const step = el.querySelector('[aria-labelledby="step-plane-change"]')!;
+      expect(step.textContent).toContain('Mid-course plane change');
+      expect(field(el, 'plane-change')).toBe(formatDeltaV(250));
+      expect(field(el, 'plane-change-time')).toBe(formatDate(window.departureTime + 100 * 21600, KERBIN_CALENDAR));
+      expect(field(el, 'plane-change-angle')).toBe(formatAngle(0.1, 1));
+      expect(el.querySelector('#step-arrive')!.textContent).toContain('4');
+    });
+
+    it('has no plane change step for a ballistic transfer', async () => {
+      expect((await render()).querySelector('[aria-labelledby="step-plane-change"]')).toBeNull();
+    });
   });
 
   it('flags an ejection that could not be refined', async () => {

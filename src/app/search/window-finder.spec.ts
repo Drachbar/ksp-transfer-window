@@ -174,6 +174,42 @@ describe('findTransferWindows', () => {
     expect(other.arrivalTime).toBe(w.departureTime + 10 * 21600 + w.timeOfFlight - 5 * 21600);
   });
 
+  it('respects a maximum time of flight', () => {
+    const max = 500 * 21600;
+    const { windows, departNow } = findTransferWindows({ ...paramsFor('Kerbin', 'Jool', 0, 3), maxTimeOfFlight: max });
+    expect(windows.length).toBe(3);
+    for (const w of [...windows, departNow!]) expect(w.timeOfFlight).toBeLessThanOrEqual(max + 1);
+  });
+
+  describe('mid-course plane change', () => {
+    it('suggests a nearby plane-change transfer when it saves more than 10 %', () => {
+      // Dres is inclined 5°; every other window is much cheaper with a plane change.
+      const params = paramsFor('Kerbin', 'Dres', 0, 3);
+      const { synodicPeriod } = defaultSearchRanges(params.origin, params.destination);
+      const { windows } = findTransferWindows(params);
+      const suggested = windows.filter((w) => w.planeChangeAlternative);
+      expect(suggested.length).toBeGreaterThan(0);
+      for (const w of suggested) {
+        const alt = w.planeChangeAlternative!;
+        expect(alt.deltaV).toBeLessThan(0.9 * w.deltaV);
+        expect(alt.transfer.planeChangeDeltaV).toBeGreaterThan(0);
+        expect(alt.transfer.planeChangeTime).toBeGreaterThan(alt.departureTime);
+        expect(alt.transfer.planeChangeTime).toBeLessThan(alt.arrivalTime);
+        expect(Math.abs(alt.departureTime - w.departureTime)).toBeLessThan(0.3 * synodicPeriod);
+        expect(alt.planeChangeAlternative).toBeUndefined();
+      }
+    });
+
+    it('does not suggest one when the saving is small', () => {
+      expect(findTransferWindows(paramsFor('Kerbin', 'Duna', 0, 3)).windows.some((w) => w.planeChangeAlternative)).toBe(false);
+    });
+
+    it('can be switched off', () => {
+      const { windows } = findTransferWindows({ ...paramsFor('Kerbin', 'Dres', 0, 3), suggestPlaneChange: false });
+      expect(windows.some((w) => w.planeChangeAlternative)).toBe(false);
+    });
+  });
+
   it('rejects bodies that do not orbit the same parent', () => {
     expect(() => findTransferWindows(paramsFor('Kerbin', 'Laythe', 0))).toThrow(/same/i);
   });

@@ -66,7 +66,8 @@
       <div class="field">
         <label for="mission-initial-altitude">Parking orbit at {{ f.origin().value() }} (km)</label>
         <input id="mission-initial-altitude" type="number" inputmode="decimal" [formField]="f.initialAltitudeKm"
-               [attr.aria-invalid]="!!initialError" aria-describedby="mission-initial-altitude-error" />
+               [attr.aria-invalid]="!!initialError" aria-describedby="mission-initial-altitude-error mission-initial-altitude-hint" />
+        <span class="hint" id="mission-initial-altitude-hint">0 = no parking orbit</span>
         <span class="error" id="mission-initial-altitude-error">{{ initialError }}</span>
       </div>
       @let finalError = error(f.finalAltitudeKm);
@@ -83,6 +84,14 @@
         </div>
         <span class="error" id="mission-final-altitude-error">{{ finalError }}</span>
       </div>
+    </div>
+    @let maxError = error(f.maxFlightDays);
+    <div class="field max-flight">
+      <label for="mission-max-flight">Max flight time (days)</label>
+      <input id="mission-max-flight" type="number" inputmode="numeric" placeholder="No limit" [formField]="f.maxFlightDays"
+             [attr.aria-invalid]="!!maxError" aria-describedby="mission-max-flight-error mission-max-flight-hint" />
+      <span class="hint" id="mission-max-flight-hint">Leave empty for no limit. Faster trips cost more Δv.</span>
+      <span class="error" id="mission-max-flight-error">{{ maxError }}</span>
     </div>
   </fieldset>
 </form>

@@ -8,6 +8,23 @@ node, the ejection angle, the phase angle and the Δv for the whole trip.
 
 Live at **<https://ksp.findersson.se>**.
 
+## Features
+
+- **Upcoming windows** from the current game date, with a "leave now or wait?"
+  comparison, for every pair of planets and for moons of the same planet.
+- **The ejection burn as manoeuvre node values** (prograde/normal Δv) and a
+  diagram of where on your parking orbit to burn.
+- **Solar system view** with the origin at the bottom, showing where everything
+  is at departure (with the transfer orbit) and right now, so you can check the
+  alignment against the map view in the game.
+- **Mid-course plane change suggestions** when they save more than 10 %, e.g.
+  for some Dres and Eeloo windows.
+- **Porkchop plot** of every departure date and flight time around a window;
+  click any point to see that transfer in detail.
+- Kerbin or Earth calendar, optional maximum flight time, flybys without a
+  capture burn.
+- Shareable links (the search is in the URL) and the last mission is remembered.
+
 ## Credits
 
 This is a modernised rewrite of Alex Moon's
@@ -42,7 +59,8 @@ npm run build             # production build in dist/
 | Path | What |
 | --- | --- |
 | `src/app/astro/` | Orbital mechanics in plain TypeScript (no Angular): vectors, quaternions, root finding, Lambert's problem, Keplerian orbits, the stock bodies, transfers. |
-| `src/app/search/` | Porkchop grid, transfer window finder and the Web Worker that runs it. |
+| `src/app/search/` | Porkchop grid, transfer window finder and the Web Worker that runs them. |
+| `src/app/planner/` | The UI: mission form, window card, diagrams, window list and porkchop plot. |
 | `src/testing/legacy/` | Reference results recorded from the original JavaScript. |
 | `scripts/generate-legacy-fixtures.mjs` | Regenerates those reference results by running `legacy/javascripts/` in Node. |
 | `legacy/` | The original application (CoffeeScript sources and compiled JavaScript). |
@@ -56,6 +74,11 @@ was fixed deliberately (each is covered by a test):
 - The ejection refinement ("refine transfer") can diverge when the ejection
   inclination is close to 0°. The window finder only accepts a refined result
   that stays within 3 % of the estimate and otherwise reports the estimate.
+
+Known difference that is kept for now: when several multi-revolution Lambert
+solutions exist, the original picks the one with the lowest ejection Δv only
+(a typo meant the insertion Δv was never added). This only matters for flight
+times longer than about one orbit.
 
 ### Deployment
 

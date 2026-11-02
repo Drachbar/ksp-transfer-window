@@ -119,7 +119,8 @@ describe('PorkchopPlot', () => {
     await fixture.whenStable();
     const tip = el.querySelector('[role="tooltip"]')!.textContent!.replace(/\s+/g, ' ');
     expect(tip).toContain('Depart');
-    expect(tip).toMatch(/\d[\d,]* m\/s/);
+    // The grid is an estimate; the card shows the refined value.
+    expect(tip).toMatch(/≈ \d[\d,]* m\/s/);
     pointer('pointerleave', 0, 0);
     await fixture.whenStable();
     expect(el.querySelector('[role="tooltip"]')).toBeNull();

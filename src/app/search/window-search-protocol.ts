@@ -5,7 +5,7 @@ import { BODIES, type BodyName } from '../astro/bodies';
 import type { TransferType } from '../astro/transfer';
 import { findTransferWindows, type TransferWindow, type WindowSearchParams, type WindowSearchResult } from './window-finder';
 import { computePorkchop } from './porkchop';
-import { defaultSearchRanges } from './ranges';
+import { searchRanges } from './ranges';
 
 export interface WindowSearchRequest {
   origin: BodyName;
@@ -18,6 +18,8 @@ export interface WindowSearchRequest {
   finalAltitude: number | null;
   transferType?: TransferType;
   windowCount?: number;
+  /** Longest acceptable time of flight (s). */
+  maxTimeOfFlight?: number;
 }
 
 /** A porkchop grid over the given departure times and the default time-of-flight range. */
@@ -72,15 +74,20 @@ export function toSearchParams(request: WindowSearchRequest): WindowSearchParams
       request.finalAltitude === null ? null : request.finalAltitude ? destination.circularOrbitVelocity(request.finalAltitude) : 0,
     transferType: request.transferType ?? 'ballistic',
     windowCount: request.windowCount,
+    maxTimeOfFlight: request.maxTimeOfFlight,
   };
 }
 
 /** Drops the transfer orbit (a class instance with references to the bodies), which does not need to cross to the app. */
-const cloneable = (w: TransferWindow): TransferWindow => ({ ...w, transfer: { ...w.transfer, orbit: undefined } });
+const cloneable = (w: TransferWindow): TransferWindow => ({
+  ...w,
+  transfer: { ...w.transfer, orbit: undefined },
+  planeChangeAlternative: w.planeChangeAlternative && cloneable(w.planeChangeAlternative),
+});
 
 function runPorkchop(id: number, request: PorkchopRequest, post: Post): void {
   const params = toSearchParams(request);
-  const ranges = defaultSearchRanges(params.origin, params.destination);
+  const ranges = searchRanges(params.origin, params.destination, params.maxTimeOfFlight);
   const grid = {
     earliestDeparture: request.earliestDeparture,
     departureSpan: request.departureSpan,

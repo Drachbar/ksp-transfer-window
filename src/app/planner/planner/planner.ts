@@ -49,6 +49,8 @@ export class Planner {
   protected readonly selected = signal(0);
   /** A transfer picked in the porkchop plot; shown instead of the selected window. */
   protected readonly picked = signal<TransferWindow | null>(null);
+  /** What the picked transfer is: a point from the plot or a suggested plane change. */
+  private readonly pickedLabel = signal('Selected point');
   protected readonly showPlot = signal(false);
   private readonly card = viewChild('card', { read: ElementRef });
 
@@ -77,7 +79,7 @@ export class Planner {
   protected readonly listWindow = computed(() => this.options()[this.selected()]);
   protected readonly selectedWindow = computed(() => this.picked() ?? this.listWindow());
   protected readonly heading = computed(() => {
-    if (this.picked()) return 'Selected point';
+    if (this.picked()) return this.pickedLabel();
     const i = this.selected() - (this.leaveNow() ? 1 : 0);
     return i < 0 ? 'Leave now' : i === 0 ? 'Next window' : `Window ${i + 1}`;
   });
@@ -132,7 +134,13 @@ export class Planner {
 
   protected pickFromPlot({ departureTime, timeOfFlight }: PorkchopPick) {
     const params = toSearchParams(toSearchRequest(this.resultMission()));
+    this.pickedLabel.set('Selected point');
     this.picked.set(describeTransfer(params, departureTime, timeOfFlight));
+  }
+
+  protected showPlaneChange(alternative: TransferWindow) {
+    this.pickedLabel.set('With mid-course plane change');
+    this.picked.set(alternative);
   }
 
   protected showCard() {

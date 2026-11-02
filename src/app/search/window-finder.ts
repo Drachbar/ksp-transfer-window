@@ -20,7 +20,7 @@ import { goldenSectionSearch } from '../astro/roots';
 import type { Vec3 } from '../astro/vector';
 import { nelderMead } from './optimize';
 import { computePorkchop, departureTimeAt, timeOfFlightAt, type PorkchopParams } from './porkchop';
-import { defaultSearchRanges } from './ranges';
+import { searchRanges, synodicPeriod } from './ranges';
 
 export interface WindowSearchParams {
   origin: CelestialBody;
@@ -30,6 +30,13 @@ export interface WindowSearchParams {
   initialOrbitalVelocity: number;
   finalOrbitalVelocity: number | null;
   transferType?: TransferType;
+  /** Longest acceptable time of flight (s); no limit when undefined. */
+  maxTimeOfFlight?: number;
+  /**
+   * For ballistic searches: also look for transfers with a mid-course plane change and
+   * attach them to windows where they save more than 10 % (default true).
+   */
+  suggestPlaneChange?: boolean;
   /** How many upcoming windows to find (default 5). */
   windowCount?: number;
   resolution?: {
@@ -62,6 +69,8 @@ export interface TransferWindow {
    * ejection velocity applies to the later SoI exit point instead.
    */
   departureVelocity: Vec3;
+  /** A nearby transfer with a mid-course plane change that is more than 10 % cheaper. */
+  planeChangeAlternative?: TransferWindow;
 }
 
 export interface WindowSearchResult {
@@ -115,7 +124,36 @@ export function describeTransfer(params: WindowSearchParams, t0: number, dt: num
   };
 }
 
+/** A plane-change alternative must save more than this fraction of the Δv to be suggested. */
+const MIN_PLANE_CHANGE_SAVING = 0.1;
+
 export function findTransferWindows(
+  params: WindowSearchParams,
+  onProgress?: (fraction: number) => void,
+): WindowSearchResult {
+  const transferType = params.transferType ?? 'ballistic';
+  if (transferType !== 'ballistic' || params.suggestPlaneChange === false) return searchWindows(params, onProgress);
+
+  // The plane-change search costs about three times as much as the ballistic one.
+  const ballisticShare = 0.25;
+  const result = searchWindows(params, (f) => onProgress?.(ballisticShare * f));
+  const { windows: alternatives } = searchWindows(
+    { ...params, transferType: 'optimal', windowCount: (params.windowCount ?? 5) + 2 },
+    (f) => onProgress?.(ballisticShare + (1 - ballisticShare) * f),
+  );
+
+  const S = synodicPeriod(params.origin, params.destination);
+  const withAlternative = (w: TransferWindow): TransferWindow => {
+    const best = alternatives
+      .filter((a) => a.transfer.planeChangeDeltaV > 0 && Math.abs(a.departureTime - w.departureTime) < 0.3 * S)
+      .filter((a) => a.deltaV < (1 - MIN_PLANE_CHANGE_SAVING) * w.deltaV)
+      .sort((a, b) => a.deltaV - b.deltaV)[0];
+    return best ? { ...w, planeChangeAlternative: best } : w;
+  };
+  return { windows: result.windows.map(withAlternative), departNow: result.departNow };
+}
+
+function searchWindows(
   params: WindowSearchParams,
   onProgress?: (fraction: number) => void,
 ): WindowSearchResult {
@@ -125,7 +163,8 @@ export function findTransferWindows(
   const perSynodic = params.resolution?.departuresPerSynodicPeriod ?? 120;
   const rows = params.resolution?.timesOfFlight ?? 100;
 
-  const ranges = defaultSearchRanges(origin, destination);
+  const ranges = searchRanges(origin, destination, params.maxTimeOfFlight);
+  const maxTimeOfFlight = ranges.shortestTimeOfFlight + ranges.timeOfFlightSpan;
   const S = ranges.synodicPeriod;
   const H = ranges.hohmannTransferTime;
 
@@ -160,7 +199,7 @@ export function findTransferWindows(
   }
 
   const deltaV = (t0: number, dt: number) =>
-    t0 < now || dt <= 0
+    t0 < now || dt <= 0 || dt > maxTimeOfFlight
       ? Infinity
       : transfer(
           transferType,

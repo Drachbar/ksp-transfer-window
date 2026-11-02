@@ -27,7 +27,7 @@ export class MissionForm {
   }
 
   /** The first error to show for a field, once the user has touched it. */
-  protected error(field: FieldTree<number>): string | undefined {
+  protected error(field: FieldTree<number> | FieldTree<number | null>): string | undefined {
     const state = field();
     if (!state.invalid() || !(state.dirty() || state.touched())) return undefined;
     return state.errors()[0]?.message;

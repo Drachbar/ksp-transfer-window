@@ -166,6 +166,17 @@ describe('Planner', () => {
     });
   });
 
+  it('shows the suggested plane-change transfer when asked', async () => {
+    const w = result.windows[0];
+    const alternative = { ...w, deltaV: w.deltaV - 300, transfer: { ...w.transfer, planeChangeDeltaV: 250, planeChangeTime: w.departureTime + 1e6 } };
+    await finishSearch({ ...result, windows: [{ ...w, planeChangeAlternative: alternative }, ...result.windows.slice(1)] });
+    el.querySelector<HTMLButtonElement>('[data-testid="plane-change-tip"] button')!.click();
+    await fixture.whenStable();
+    const card = el.querySelector('app-window-card')!;
+    expect(card.querySelector('h2')!.textContent).toContain('With mid-course plane change');
+    expect(card.querySelector('[data-field="total"]')!.textContent).toBe(formatDeltaV(w.deltaV - 300));
+  });
+
   it('shows the window picked in the list', async () => {
     await finishSearch();
     el.querySelectorAll<HTMLButtonElement>('app-window-list button.window')[2].click();

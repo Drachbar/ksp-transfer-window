@@ -29,7 +29,14 @@
   </section>
 
   <section class="step" aria-labelledby="step-burn">
-    <h3 id="step-burn"><span class="step-number">2</span> Ejection burn from a {{ m.initialAltitudeKm }} km orbit</h3>
+    <h3 id="step-burn">
+      <span class="step-number">2</span>
+      @if (m.initialAltitudeKm > 0) {
+        Ejection burn from a {{ m.initialAltitudeKm }} km orbit
+      } @else {
+        Ejection burn
+      }
+    </h3>
     <div class="split">
       <dl class="facts">
         <div class="fact-main">
@@ -55,6 +62,15 @@
         <app-ejection-diagram [ejectionAngle]="v.ejectionAngle" [origin]="m.origin" [parent]="v.parent" />
       }
     </div>
+    @if (v.alternative; as alt) {
+      <div class="tip" data-testid="plane-change-tip">
+        <p>
+          <strong>Tip:</strong> with a mid-course plane change, a transfer departing {{ alt.departure }} costs
+          {{ alt.total }}: that saves {{ alt.saving }} ({{ alt.percent }}%).
+        </p>
+        <button type="button" (click)="showAlternative.emit(window().planeChangeAlternative!)">Show this transfer</button>
+      </div>
+    }
     @if (!v.refined) {
       <p class="note" data-testid="estimate-note">
         The ejection numbers are an estimate: refining them for the exact point where you leave {{ m.origin }}’s sphere of
@@ -63,8 +79,29 @@
     }
   </section>
 
+  @if (v.planeChange; as pc) {
+    <section class="step" aria-labelledby="step-plane-change">
+      <h3 id="step-plane-change"><span class="step-number">3</span> Mid-course plane change</h3>
+      <dl class="facts">
+        <div class="fact-main">
+          <dt>Δv</dt>
+          <dd data-field="plane-change">{{ pc.deltaV }}</dd>
+        </div>
+        <div>
+          <dt>When</dt>
+          <dd data-field="plane-change-time">{{ pc.time }}</dd>
+        </div>
+        <div>
+          <dt>Plane change</dt>
+          <dd data-field="plane-change-angle">{{ pc.angle }}</dd>
+        </div>
+      </dl>
+      <p class="hint-text">Burn normal or anti-normal to line your orbit up with {{ m.destination }}’s.</p>
+    </section>
+  }
+
   <section class="step" aria-labelledby="step-arrive">
-    <h3 id="step-arrive"><span class="step-number">3</span> Arrive at {{ m.destination }}</h3>
+    <h3 id="step-arrive"><span class="step-number">{{ v.planeChange ? 4 : 3 }}</span> Arrive at {{ m.destination }}</h3>
     <dl class="facts">
       <div>
         <dt>Arrival</dt>

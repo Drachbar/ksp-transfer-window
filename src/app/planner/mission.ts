@@ -21,6 +21,8 @@ export interface Mission {
   /** False for a flyby: no insertion burn at the destination. */
   capture: boolean;
   calendar: CalendarName;
+  /** Longest acceptable flight time in days of the selected calendar; null = no limit. */
+  maxFlightDays: number | null;
 }
 
 export const DEFAULT_MISSION: Mission = {
@@ -33,6 +35,7 @@ export const DEFAULT_MISSION: Mission = {
   finalAltitudeKm: 100,
   capture: true,
   calendar: 'kerbin',
+  maxFlightDays: null,
 };
 
 export const WINDOW_COUNT = 5;
@@ -80,6 +83,7 @@ export function toSearchRequest(m: Mission): WindowSearchRequest {
     initialAltitude: m.initialAltitudeKm * 1e3,
     finalAltitude: m.capture ? m.finalAltitudeKm * 1e3 : null,
     windowCount: WINDOW_COUNT,
+    maxTimeOfFlight: m.maxFlightDays === null ? undefined : m.maxFlightDays * calendarOf(m).hoursPerDay * 3600,
   };
 }
 
@@ -103,4 +107,8 @@ export const missionSchema = schema<Mission>((p) => {
   between(p.initialAltitudeKm, 'Altitude', 0, () => Infinity, p.calendar);
   between(p.finalAltitudeKm, 'Altitude', 0, () => Infinity, p.calendar);
   disabled(p.finalAltitudeKm, ({ valueOf }) => !valueOf(p.capture));
+  validate(p.maxFlightDays, ({ value }) => {
+    const v = value();
+    return v === null || (Number.isFinite(v) && v > 0) ? undefined : { kind: 'range', message: 'Max flight time must be more than 0 days' };
+  });
 });

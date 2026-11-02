@@ -13,6 +13,7 @@ const custom: Mission = {
   finalAltitudeKm: 30,
   capture: true,
   calendar: 'earth',
+  maxFlightDays: 400,
 };
 
 describe('query parameters', () => {
@@ -27,6 +28,18 @@ describe('query parameters', () => {
       capture: '100',
       calendar: 'kerbin',
     });
+  });
+
+  it('writes the maximum flight time only when there is one', () => {
+    expect(missionToQueryParams(custom)['maxflight']).toBe('400');
+    expect('maxflight' in missionToQueryParams(DEFAULT_MISSION)).toBe(false);
+  });
+
+  it('reads a shared search without a maximum flight time as "no limit", overriding the last visit', () => {
+    const shared = missionFromQueryParams(params(missionToQueryParams(DEFAULT_MISSION)));
+    expect(restoreMission(shared, { maxFlightDays: 300 }).maxFlightDays).toBeNull();
+    // A link with only some parameters leaves the rest to the last visit.
+    expect(restoreMission(missionFromQueryParams(params({ to: 'Eve' })), { maxFlightDays: 300 }).maxFlightDays).toBe(300);
   });
 
   it('writes "none" for a flyby', () => {

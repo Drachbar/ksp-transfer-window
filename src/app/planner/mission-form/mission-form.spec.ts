@@ -63,6 +63,19 @@ describe('MissionForm', () => {
     expect(mission()).toMatchObject({ year: 3, day: 120, hour: 4, initialAltitudeKm: 80 });
   });
 
+  it('explains what a parking orbit of 0 km means', () => {
+    expect(el.textContent).toContain('0 = no parking orbit');
+  });
+
+  it('takes an optional maximum flight time', async () => {
+    const max = control<HTMLInputElement>('Max flight time');
+    expect(max.value).toBe('');
+    await enter(max, '250');
+    expect(mission().maxFlightDays).toBe(250);
+    await enter(max, '');
+    expect(mission().maxFlightDays).toBeNull();
+  });
+
   it('explains invalid input', async () => {
     await enter(control<HTMLInputElement>('Day'), '500');
     expect(el.textContent).toContain('Day must be between 1 and 426');

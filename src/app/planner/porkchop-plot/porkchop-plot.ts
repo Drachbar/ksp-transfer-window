@@ -115,7 +115,7 @@ export class PorkchopPlot {
       departure: formatDate(c.departureTime, cal),
       flight: formatDuration(c.timeOfFlight, cal),
       arrival: formatDate(c.departureTime + c.timeOfFlight, cal),
-      deltaV: Number.isFinite(c.deltaV) ? formatDeltaV(c.deltaV) : 'No transfer possible',
+      deltaV: Number.isFinite(c.deltaV) ? `≈ ${formatDeltaV(c.deltaV)}` : 'No transfer possible',
     };
   });
 

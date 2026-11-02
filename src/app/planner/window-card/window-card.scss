@@ -134,3 +134,36 @@ h3 {
   background: var(--warning-bg);
   font-size: 0.9rem;
 }
+
+.tip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-bg);
+  font-size: 0.9rem;
+
+  p {
+    flex: 1 1 18rem;
+    margin: 0;
+  }
+
+  button {
+    padding: 0.35rem 0.8rem;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--accent);
+    font: inherit;
+    cursor: pointer;
+  }
+}
+
+.hint-text {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}

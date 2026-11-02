@@ -16,6 +16,7 @@ describe('mission', () => {
       finalAltitudeKm: 100,
       capture: true,
       calendar: 'kerbin',
+      maxFlightDays: null,
     });
   });
 
@@ -79,6 +80,12 @@ describe('mission', () => {
       });
     });
 
+    it('converts the maximum flight time from days of the selected calendar', () => {
+      expect(toSearchRequest({ ...DEFAULT_MISSION, maxFlightDays: 300 }).maxTimeOfFlight).toBe(300 * 6 * 3600);
+      expect(toSearchRequest({ ...DEFAULT_MISSION, maxFlightDays: 300, calendar: 'earth' }).maxTimeOfFlight).toBe(300 * 86400);
+      expect(toSearchRequest(DEFAULT_MISSION).maxTimeOfFlight).toBeUndefined();
+    });
+
     it('requests no insertion burn when not capturing', () => {
       expect(toSearchRequest({ ...DEFAULT_MISSION, capture: false }).finalAltitude).toBeNull();
     });
@@ -120,6 +127,12 @@ describe('missionSchema', () => {
   it('does not allow negative altitudes', () => {
     expect(formFor({ initialAltitudeKm: -1 }).initialAltitudeKm().invalid()).toBe(true);
     expect(formFor({ finalAltitudeKm: -1 }).finalAltitudeKm().invalid()).toBe(true);
+  });
+
+  it('allows no maximum flight time, or a positive one', () => {
+    expect(formFor({ maxFlightDays: null }).maxFlightDays().valid()).toBe(true);
+    expect(formFor({ maxFlightDays: 300 }).maxFlightDays().valid()).toBe(true);
+    expect(formFor({ maxFlightDays: 0 }).maxFlightDays().errors()[0].message).toBe('Max flight time must be more than 0 days');
   });
 
   it('disables the capture altitude for a flyby', () => {

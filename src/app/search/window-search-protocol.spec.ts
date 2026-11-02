@@ -24,6 +24,10 @@ describe('toSearchParams', () => {
     expect(p.windowCount).toBe(2);
   });
 
+  it('passes on a maximum time of flight', () => {
+    expect(toSearchParams({ ...request, maxTimeOfFlight: 1e7 }).maxTimeOfFlight).toBe(1e7);
+  });
+
   it('treats a null final altitude as "no insertion burn" (flyby)', () => {
     expect(toSearchParams({ ...request, finalAltitude: null }).finalOrbitalVelocity).toBeNull();
   });
@@ -50,6 +54,16 @@ describe('handleWorkerRequest: windows', () => {
     expect(last.result.windows.map((w) => w.deltaV)).toEqual(expected.windows.map((w) => w.deltaV));
     for (const w of last.result.windows) expect(w.transfer.orbit).toBeUndefined();
     // Must survive structured cloning (postMessage)
+    expect(() => structuredClone(last)).not.toThrow();
+  });
+
+  it('can send plane-change suggestions to the app', () => {
+    const messages: WorkerResponse[] = [];
+    handleWorkerRequest({ id: 8, kind: 'windows', request: { ...request, destination: 'Dres', windowCount: 3 } }, (m) => messages.push(m));
+    const last = messages.at(-1)!;
+    if (last.type !== 'result') throw new Error('expected a result');
+    expect(last.result.windows.some((w) => w.planeChangeAlternative)).toBe(true);
+    for (const w of last.result.windows) expect(w.planeChangeAlternative?.transfer.orbit).toBeUndefined();
     expect(() => structuredClone(last)).not.toThrow();
   });
 
@@ -99,6 +113,16 @@ describe('handleWorkerRequest: porkchop', () => {
     expect(Array.from(last.result.deltaVs)).toEqual(Array.from(expected.deltaVs));
     expect(transfers.at(-1)).toEqual([last.result.deltaVs.buffer]);
     expect(messages.some((m) => m.type === 'progress')).toBe(true);
+  });
+
+  it('limits the time-of-flight axis to the maximum', () => {
+    const messages: WorkerResponse[] = [];
+    const ranges = defaultSearchRanges(BODIES.Kerbin, BODIES.Duna);
+    const max = ranges.shortestTimeOfFlight + 0.5 * ranges.timeOfFlightSpan;
+    handleWorkerRequest({ id: 5, kind: 'porkchop', request: { ...porkchopRequest, maxTimeOfFlight: max } }, (m) => messages.push(m));
+    const last = messages.at(-1)!;
+    if (last.type !== 'porkchop') throw new Error('expected a grid');
+    expect(last.result.shortestTimeOfFlight + last.result.timeOfFlightSpan).toBeCloseTo(max, 3);
   });
 
   it('posts an error for an impossible route', () => {

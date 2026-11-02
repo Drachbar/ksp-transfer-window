@@ -1,4 +1,4 @@
-import { defaultSearchRanges, hohmannTransferTime, synodicPeriod } from './ranges';
+import { defaultSearchRanges, hohmannTransferTime, searchRanges, synodicPeriod } from './ranges';
 import { BODIES } from '../astro/bodies';
 
 describe('search ranges', () => {
@@ -28,5 +28,25 @@ describe('search ranges', () => {
     expect(() => defaultSearchRanges(BODIES.Kerbin, BODIES.Laythe)).toThrow(/same/i);
     expect(() => defaultSearchRanges(BODIES.Kerbin, BODIES.Kerbin)).toThrow(/different/i);
     expect(() => defaultSearchRanges(BODIES.Kerbol, BODIES.Kerbin)).toThrow();
+  });
+
+  describe('with a maximum time of flight', () => {
+    const r = defaultSearchRanges(BODIES.Kerbin, BODIES.Jool);
+    const end = r.shortestTimeOfFlight + r.timeOfFlightSpan;
+
+    it('cuts the range off at the maximum', () => {
+      const max = r.shortestTimeOfFlight + 0.25 * r.timeOfFlightSpan;
+      expect(searchRanges(BODIES.Kerbin, BODIES.Jool, max)).toEqual({ ...r, timeOfFlightSpan: max - r.shortestTimeOfFlight });
+    });
+
+    it('leaves the range alone when the maximum is beyond it', () => {
+      expect(searchRanges(BODIES.Kerbin, BODIES.Jool, 2 * end)).toEqual(r);
+      expect(searchRanges(BODIES.Kerbin, BODIES.Jool, undefined)).toEqual(r);
+    });
+
+    it('searches from half the maximum when the maximum is shorter than the usual range', () => {
+      const max = 0.5 * r.shortestTimeOfFlight;
+      expect(searchRanges(BODIES.Kerbin, BODIES.Jool, max)).toMatchObject({ shortestTimeOfFlight: max / 2, timeOfFlightSpan: max / 2 });
+    });
   });
 });

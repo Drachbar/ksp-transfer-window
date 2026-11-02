@@ -40,3 +40,16 @@ export function defaultSearchRanges(origin: CelestialBody, destination: Celestia
     timeOfFlightSpan: Math.min(2 * destinationPeriod, h),
   };
 }
+
+/**
+ * The default ranges, with the time of flight capped at `maxTimeOfFlight` (s) when given.
+ * If the cap is below the usual shortest time of flight, the search runs from half the cap.
+ */
+export function searchRanges(origin: CelestialBody, destination: CelestialBody, maxTimeOfFlight?: number): SearchRanges {
+  const r = defaultSearchRanges(origin, destination);
+  if (maxTimeOfFlight === undefined || !(maxTimeOfFlight < r.shortestTimeOfFlight + r.timeOfFlightSpan)) return r;
+  if (maxTimeOfFlight <= r.shortestTimeOfFlight) {
+    return { ...r, shortestTimeOfFlight: maxTimeOfFlight / 2, timeOfFlightSpan: maxTimeOfFlight / 2 };
+  }
+  return { ...r, timeOfFlightSpan: maxTimeOfFlight - r.shortestTimeOfFlight };
+}
