@@ -1,9 +1,11 @@
 import { Component, computed, effect, inject, InjectionToken, signal } from '@angular/core';
 import { form } from '@angular/forms/signals';
+import { ActivatedRoute, Router } from '@angular/router';
+import { loadStoredMission, MISSION_STORAGE, missionFromQueryParams, missionToQueryParams, restoreMission, storeMission } from '../mission-state';
 import { MissionForm } from '../mission-form/mission-form';
 import { WindowCard } from '../window-card/window-card';
 import { WindowList } from '../window-list/window-list';
-import { calendarOf, DEFAULT_MISSION, missionSchema, nowOf, toSearchRequest, type Mission } from '../mission';
+import { calendarOf, missionSchema, nowOf, toSearchRequest, type Mission } from '../mission';
 import { formatDeltaV } from '../format';
 import { formatDuration } from '../../astro/game-time';
 import { WindowSearch } from '../../search/window-search';
@@ -23,13 +25,22 @@ const isAbort = (e: unknown) => e instanceof DOMException && e.name === 'AbortEr
 export class Planner {
   private readonly windowSearch = inject(WindowSearch);
   private readonly debounceMs = inject(SEARCH_DEBOUNCE_MS);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly storage = inject(MISSION_STORAGE);
 
-  protected readonly mission = signal<Mission>(DEFAULT_MISSION);
+  /** A shared link wins over the last visit, which wins over the defaults. */
+  protected readonly mission = signal<Mission>(
+    restoreMission(
+      missionFromQueryParams((key) => this.route.snapshot.queryParamMap.get(key)),
+      loadStoredMission(this.storage),
+    ),
+  );
   protected readonly missionForm = form(this.mission, missionSchema);
 
   protected readonly result = signal<WindowSearchResult | null>(null);
   /** The mission the current result was computed for (the form may have moved on). */
-  protected readonly resultMission = signal<Mission>(DEFAULT_MISSION);
+  protected readonly resultMission = signal<Mission>(this.mission());
   /** Search progress in [0, 1], or null when not searching. */
   protected readonly progress = signal<number | null>(null);
   protected readonly error = signal<string | null>(null);
@@ -81,6 +92,7 @@ export class Planner {
   }
 
   private async search(mission: Mission) {
+    this.remember(mission);
     this.progress.set(0);
     this.error.set(null);
     try {
@@ -94,5 +106,11 @@ export class Planner {
       this.progress.set(null);
       this.error.set(e instanceof Error ? e.message : String(e));
     }
+  }
+
+  /** Makes the search shareable (URL) and restorable (local storage). */
+  private remember(mission: Mission) {
+    storeMission(this.storage, mission);
+    void this.router.navigate([], { relativeTo: this.route, queryParams: missionToQueryParams(mission), replaceUrl: true });
   }
 }

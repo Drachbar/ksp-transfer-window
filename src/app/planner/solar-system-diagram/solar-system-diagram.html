@@ -1,0 +1,54 @@
+@let l = layout();
+<figure>
+  <div class="modes" role="group" aria-label="Show positions">
+    <button type="button" [attr.aria-pressed]="mode() === 'departure'" (click)="mode.set('departure')">At departure</button>
+    <button type="button" [attr.aria-pressed]="mode() === 'now'" (click)="mode.set('now')">Now</button>
+  </div>
+
+  <svg viewBox="-125 -125 250 250" role="img" [attr.aria-label]="label()">
+    <title>{{ label() }}</title>
+
+    @for (orbit of l.orbits; track orbit.name) {
+      <path class="orbit" [class.highlight]="orbit.name === mission().origin || orbit.name === mission().destination" [attr.d]="orbit.path" />
+    }
+
+    <!-- Phase angle: from the origin's direction to the destination's -->
+    @for (b of l.bodies; track b.name) {
+      @if (b.role !== 'other') {
+        <line class="radial" x1="0" y1="0" [attr.x2]="b.x" [attr.y2]="b.y" />
+      }
+    }
+    <path class="phase-arc" [attr.d]="phaseArc()" />
+
+    @if (l.transfer; as t) {
+      <path class="transfer" data-testid="transfer" [attr.d]="t.path" />
+      <circle class="arrival" data-testid="arrival" [attr.cx]="t.arrival.x" [attr.cy]="t.arrival.y" r="4.5">
+        <title>{{ mission().destination }} on arrival</title>
+      </circle>
+    }
+
+    <circle class="parent" cx="0" cy="0" r="7" />
+    <text class="parent-label" x="0" y="-11" text-anchor="middle">{{ l.parent }}</text>
+
+    @for (b of l.bodies; track b.name) {
+      <circle [attr.data-body]="b.name" [class]="'body ' + b.role" [attr.cx]="b.x" [attr.cy]="b.y" [attr.r]="b.role === 'other' ? 2.5 : 5">
+        <title>{{ b.name }}</title>
+      </circle>
+    }
+    @for (label of labels(); track label.name) {
+      <text class="body-label" [attr.x]="label.x" [attr.y]="label.y + 3.5" text-anchor="middle">{{ label.name }}</text>
+    }
+  </svg>
+
+  <figcaption>
+    @if (mode() === 'now') {
+      <strong>Now:</strong> {{ nowText() }}. <strong>At departure:</strong> {{ departureText() }}.
+    } @else {
+      <strong>At departure:</strong> {{ departureText() }}.
+      @if (l.transfer) {
+        The ring shows where {{ mission().destination }} will be when you arrive.
+      }
+    }
+    <span class="muted">Seen from above; angles are true, distances are not to scale.</span>
+  </figcaption>
+</figure>

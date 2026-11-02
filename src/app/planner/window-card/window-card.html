@@ -11,21 +11,26 @@
 
   <section class="step" aria-labelledby="step-depart">
     <h3 id="step-depart"><span class="step-number">1</span> Depart from {{ m.origin }}</h3>
-    <p class="when">
-      <span data-field="departure">{{ v.departure }}</span>
-      <span class="countdown" data-field="countdown">{{ v.countdown }}</span>
-    </p>
-    <dl class="facts">
+    <div class="split wide">
       <div>
-        <dt>Phase angle</dt>
-        <dd data-field="phase-angle">{{ v.phaseAngle }}</dd>
+        <p class="when">
+          <span data-field="departure">{{ v.departure }}</span>
+          <span class="countdown" data-field="countdown">{{ v.countdown }}</span>
+        </p>
+        <dl class="facts">
+          <div>
+            <dt>Phase angle</dt>
+            <dd data-field="phase-angle">{{ v.phaseAngle }}</dd>
+          </div>
+        </dl>
       </div>
-    </dl>
+      <app-solar-system-diagram [window]="window()" [mission]="m" />
+    </div>
   </section>
 
   <section class="step" aria-labelledby="step-burn">
     <h3 id="step-burn"><span class="step-number">2</span> Ejection burn from a {{ m.initialAltitudeKm }} km orbit</h3>
-    <div class="burn">
+    <div class="split">
       <dl class="facts">
         <div class="fact-main">
           <dt>Δv</dt>

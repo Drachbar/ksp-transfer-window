@@ -1,5 +1,6 @@
 import { Component, computed, input } from '@angular/core';
 import { EjectionDiagram } from '../ejection-diagram/ejection-diagram';
+import { SolarSystemDiagram } from '../solar-system-diagram/solar-system-diagram';
 import { calendarOf, nowOf, type Mission } from '../mission';
 import { formatAngle, formatDeltaV, formatSignedDeltaV } from '../format';
 import { formatDate, formatDuration } from '../../astro/game-time';
@@ -9,7 +10,7 @@ import type { TransferWindow } from '../../search/window-finder';
 /** Everything you need to fly one transfer window. */
 @Component({
   selector: 'app-window-card',
-  imports: [EjectionDiagram],
+  imports: [EjectionDiagram, SolarSystemDiagram],
   templateUrl: './window-card.html',
   styleUrl: './window-card.scss',
 })

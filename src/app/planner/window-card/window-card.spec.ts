@@ -51,6 +51,11 @@ describe('WindowCard', () => {
     expect(field(await render(), 'phase-angle')).toBe(formatAngle(window.phaseAngle));
   });
 
+  it('shows where the planets are at departure, in the departure step', async () => {
+    const step = (await render()).querySelector('[aria-labelledby="step-depart"]')!;
+    expect(step.querySelector('app-solar-system-diagram')).not.toBeNull();
+  });
+
   it('draws where to burn', async () => {
     expect((await render()).querySelector('app-ejection-diagram')).not.toBeNull();
   });

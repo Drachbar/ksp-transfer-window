@@ -17,6 +17,7 @@ import {
   type TransferType,
 } from '../astro/transfer';
 import { goldenSectionSearch } from '../astro/roots';
+import type { Vec3 } from '../astro/vector';
 import { nelderMead } from './optimize';
 import { computePorkchop, departureTimeAt, timeOfFlightAt, type PorkchopParams } from './porkchop';
 import { defaultSearchRanges } from './ranges';
@@ -55,6 +56,12 @@ export interface TransferWindow {
   details: TransferDetails;
   /** Angle the destination leads the origin by at departure (rad); negative for an inner destination. */
   phaseAngle: number;
+  /**
+   * Velocity on the transfer orbit as it leaves the origin's position at the departure time
+   * (relative to the parent body). Use it to draw the transfer orbit; the refined transfer's
+   * ejection velocity applies to the later SoI exit point instead.
+   */
+  departureVelocity: Vec3;
 }
 
 export interface WindowSearchResult {
@@ -158,6 +165,7 @@ export function findTransferWindows(
       refined,
       details: transferDetails(best, origin, t0, initialOrbitalVelocity),
       phaseAngle: origin.orbit!.phaseAngle(destination.orbit!, t0),
+      departureVelocity: initial.ejectionVelocity,
     };
   };
 

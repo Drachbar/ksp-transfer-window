@@ -1,0 +1,121 @@
+:host {
+  display: block;
+}
+
+figure {
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+}
+
+.modes {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  overflow: hidden;
+
+  button {
+    padding: 0.3rem 0.8rem;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+
+    &[aria-pressed='true'] {
+      background: var(--accent);
+      color: var(--on-accent);
+    }
+  }
+}
+
+svg {
+  display: block;
+  justify-self: stretch;
+  width: 100%;
+  max-width: 380px;
+  margin-inline: auto;
+  height: auto;
+  font-family: inherit;
+}
+
+.orbit {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 0.8;
+
+  &.highlight {
+    stroke: var(--border-strong);
+    stroke-width: 1.2;
+  }
+}
+
+.radial {
+  stroke: var(--text-muted);
+  stroke-width: 0.6;
+  stroke-dasharray: 2 2;
+}
+
+.phase-arc {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.transfer {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.arrival {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.parent {
+  fill: var(--sun);
+}
+
+.parent-label,
+.body-label {
+  fill: var(--text);
+  font-size: 9px;
+}
+
+.parent-label {
+  fill: var(--text-muted);
+}
+
+.body {
+  stroke: var(--surface);
+  stroke-width: 1;
+
+  &.origin {
+    fill: var(--planet);
+  }
+
+  &.destination {
+    fill: var(--accent);
+  }
+
+  &.other {
+    fill: var(--text-muted);
+  }
+}
+
+figcaption {
+  max-width: 34rem;
+  font-size: 0.85rem;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.muted {
+  display: block;
+  color: var(--text-muted);
+}

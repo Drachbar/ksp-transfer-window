@@ -1,4 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter, Router } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { MISSION_STORAGE, STORAGE_KEY } from '../mission-state';
 import { Planner, SEARCH_DEBOUNCE_MS } from './planner';
 import { WindowSearch } from '../../search/window-search';
 import type { WindowSearchRequest } from '../../search/window-search-protocol';
@@ -39,8 +42,10 @@ describe('Planner', () => {
     search = new FakeWindowSearch();
     TestBed.configureTestingModule({
       providers: [
+        provideRouter([]),
         { provide: WindowSearch, useValue: search },
         { provide: SEARCH_DEBOUNCE_MS, useValue: 0 },
+        { provide: MISSION_STORAGE, useValue: null },
       ],
     });
     fixture = TestBed.createComponent(Planner);
@@ -153,5 +158,69 @@ describe('Planner', () => {
     search.calls[0].reject(new DOMException('Search cancelled', 'AbortError'));
     await settle();
     expect(el.querySelector('[role="alert"]')).toBeNull();
+  });
+});
+
+describe('Planner state', () => {
+  class MemoryStorage {
+    data = new Map<string, string>();
+    getItem = (k: string) => this.data.get(k) ?? null;
+    setItem = (k: string, v: string) => void this.data.set(k, v);
+  }
+  let search: FakeWindowSearch;
+  let storage: MemoryStorage;
+
+  beforeEach(() => {
+    search = new FakeWindowSearch();
+    storage = new MemoryStorage();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: '', component: Planner }]),
+        { provide: WindowSearch, useValue: search },
+        { provide: SEARCH_DEBOUNCE_MS, useValue: 0 },
+        { provide: MISSION_STORAGE, useValue: storage },
+      ],
+    });
+  });
+
+  const open = async (url: string) => {
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(url, Planner);
+    await harness.fixture.whenStable();
+    await new Promise((r) => setTimeout(r));
+    await harness.fixture.whenStable();
+    return harness;
+  };
+
+  it('opens the mission described in the URL', async () => {
+    await open('/?from=Mun&to=Minmus&year=2&day=3&hour=1&orbit=20&capture=none&calendar=kerbin');
+    expect(search.calls[0].request).toMatchObject({ origin: 'Mun', destination: 'Minmus', initialAltitude: 20e3, finalAltitude: null });
+    expect(search.calls[0].request.now).toBe((426 + 2) * 6 * 3600 + 3600);
+  });
+
+  it('falls back to the mission from the last visit', async () => {
+    storage.setItem(STORAGE_KEY, JSON.stringify({ ...DEFAULT_MISSION, destination: 'Eve', day: 30 }));
+    await open('/');
+    expect(search.calls[0].request).toMatchObject({ destination: 'Eve', now: 29 * 6 * 3600 });
+  });
+
+  it('prefers the URL over the last visit', async () => {
+    storage.setItem(STORAGE_KEY, JSON.stringify({ ...DEFAULT_MISSION, destination: 'Eve' }));
+    await open('/?to=Jool');
+    expect(search.calls[0].request.destination).toBe('Jool');
+  });
+
+  it('puts the searched mission in the URL and remembers it', async () => {
+    await open('/?to=Dres');
+    const url = TestBed.inject(Router).url;
+    expect(url).toContain('from=Kerbin');
+    expect(url).toContain('to=Dres');
+    expect(url).toContain('capture=100');
+    expect(JSON.parse(storage.getItem(STORAGE_KEY)!)).toMatchObject({ destination: 'Dres' });
+  });
+
+  it('copes with nonsense in the URL', async () => {
+    await open('/?from=Narnia&day=banana');
+    expect(search.calls[0].request).toEqual(toSearchRequest(DEFAULT_MISSION));
   });
 });

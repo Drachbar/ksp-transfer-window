@@ -1,6 +1,7 @@
 import { findTransferWindows, type WindowSearchParams, type WindowSearchResult } from './window-finder';
 import { defaultSearchRanges } from './ranges';
 import { transfer } from '../astro/transfer';
+import { Orbit } from '../astro/orbit';
 import { BODIES, type BodyName } from '../astro/bodies';
 import { decode } from '../../testing/legacy-fixtures';
 import fixture from '../../testing/legacy/transfers.json';
@@ -62,6 +63,18 @@ describe('findTransferWindows', () => {
         expect(Number.isFinite(w.details.ejectionProgradeDeltaV)).toBe(true);
         expect(Number.isFinite(w.details.ejectionNormalDeltaV)).toBe(true);
         expect(Number.isFinite(w.transfer.ejectionAngle!)).toBe(true);
+      }
+    });
+
+    it('gives the heliocentric departure velocity, which leads to the destination at arrival', () => {
+      for (const w of result.windows) {
+        const o = params.origin.orbit!;
+        const start = o.positionAtTrueAnomaly(o.trueAnomalyAt(w.departureTime));
+        const orbit = Orbit.fromPositionAndVelocity(params.origin.orbit!.referenceBody, start, w.departureVelocity, w.departureTime);
+        const end = orbit.positionAtTrueAnomaly(orbit.trueAnomalyAt(w.arrivalTime));
+        const d = params.destination.orbit!;
+        const target = d.positionAtTrueAnomaly(d.trueAnomalyAt(w.arrivalTime));
+        expect(Math.hypot(end[0] - target[0], end[1] - target[1], end[2] - target[2])).toBeLessThan(1e6); // < 1000 km
       }
     });
 
