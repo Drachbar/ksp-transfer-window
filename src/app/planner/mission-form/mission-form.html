@@ -1,0 +1,88 @@
+@let f = form();
+<form class="mission" (submit)="$event.preventDefault()" novalidate>
+  <fieldset>
+    <legend>Route</legend>
+    <div class="row">
+      <div class="field">
+        <label for="mission-origin">From</label>
+        <select id="mission-origin" [formField]="f.origin">
+          @for (group of originGroups; track group.label) {
+            <optgroup [label]="group.label">
+              @for (body of group.bodies; track body) {
+                <option [value]="body">{{ body }}</option>
+              }
+            </optgroup>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label for="mission-destination">To</label>
+        <select id="mission-destination" [formField]="f.destination">
+          @for (body of destinations(); track body) {
+            <option [value]="body">{{ body }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Current game time</legend>
+    <div class="row three">
+      @let yearError = error(f.year);
+      <div class="field">
+        <label for="mission-year">Year</label>
+        <input id="mission-year" type="number" inputmode="numeric" step="1" [formField]="f.year"
+               [attr.aria-invalid]="!!yearError" aria-describedby="mission-year-error" />
+        <span class="error" id="mission-year-error">{{ yearError }}</span>
+      </div>
+      @let dayError = error(f.day);
+      <div class="field">
+        <label for="mission-day">Day</label>
+        <input id="mission-day" type="number" inputmode="numeric" step="1"
+               [formField]="f.day" [attr.aria-invalid]="!!dayError" aria-describedby="mission-day-error mission-day-hint" />
+        <span class="hint" id="mission-day-hint">1–{{ calendar().daysPerYear }}</span>
+        <span class="error" id="mission-day-error">{{ dayError }}</span>
+      </div>
+      @let hourError = error(f.hour);
+      <div class="field">
+        <label for="mission-hour">Hour</label>
+        <input id="mission-hour" type="number" inputmode="numeric" step="1"
+               [formField]="f.hour" [attr.aria-invalid]="!!hourError" aria-describedby="mission-hour-error mission-hour-hint" />
+        <span class="hint" id="mission-hour-hint">0–{{ calendar().hoursPerDay - 1 }}</span>
+        <span class="error" id="mission-hour-error">{{ hourError }}</span>
+      </div>
+    </div>
+    <div class="calendar" role="radiogroup" aria-label="Calendar">
+      <label class="choice"><input type="radio" value="kerbin" [formField]="f.calendar" /> Kerbin time (6 h days)</label>
+      <label class="choice"><input type="radio" value="earth" [formField]="f.calendar" /> Earth time (24 h days)</label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Orbits</legend>
+    <div class="row">
+      @let initialError = error(f.initialAltitudeKm);
+      <div class="field">
+        <label for="mission-initial-altitude">Parking orbit at {{ f.origin().value() }} (km)</label>
+        <input id="mission-initial-altitude" type="number" inputmode="decimal" [formField]="f.initialAltitudeKm"
+               [attr.aria-invalid]="!!initialError" aria-describedby="mission-initial-altitude-error" />
+        <span class="error" id="mission-initial-altitude-error">{{ initialError }}</span>
+      </div>
+      @let finalError = error(f.finalAltitudeKm);
+      <div class="field">
+        <label class="choice" for="mission-capture">
+          <input id="mission-capture" type="checkbox" [formField]="f.capture" />
+          Capture into orbit at {{ f.destination().value() }}
+        </label>
+        <label class="sr-only" for="mission-final-altitude">Capture orbit altitude (km)</label>
+        <div class="with-unit">
+          <input id="mission-final-altitude" type="number" inputmode="decimal" [formField]="f.finalAltitudeKm"
+                 [attr.aria-invalid]="!!finalError" aria-describedby="mission-final-altitude-error" />
+          <span class="unit" aria-hidden="true">km</span>
+        </div>
+        <span class="error" id="mission-final-altitude-error">{{ finalError }}</span>
+      </div>
+    </div>
+  </fieldset>
+</form>

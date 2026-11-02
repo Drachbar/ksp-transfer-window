@@ -1,0 +1,32 @@
+<svg viewBox="-110 -110 220 220" role="img" [attr.aria-label]="label()">
+  <title>{{ label() }}</title>
+  <defs>
+    <marker id="ejection-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" class="arrowhead" />
+    </marker>
+  </defs>
+
+  <!-- Direction to the body we orbit -->
+  <line class="guide" x1="-30" y1="0" x2="-100" y2="0" marker-end="url(#ejection-arrow)" />
+  <text class="caption" x="-104" y="-8" text-anchor="start">{{ parent() }}</text>
+
+  <!-- Prograde -->
+  <line class="guide" x1="0" y1="-30" x2="0" y2="-100" marker-end="url(#ejection-arrow)" />
+  <text class="caption" x="6" y="-96">Prograde</text>
+
+  <!-- Parking orbit, travelling counter-clockwise -->
+  <circle class="orbit" cx="0" cy="0" [attr.r]="orbitRadius" />
+  <path class="orbit-direction" d="M -42.4 42.4 A 60 60 0 0 0 -2 60" marker-end="url(#ejection-arrow)" />
+
+  <circle class="planet" cx="0" cy="0" r="22" />
+  <text class="planet-name" x="0" y="4" text-anchor="middle">{{ origin() }}</text>
+
+  <!-- Ejection angle -->
+  <line class="radial" [attr.x1]="radial().x1" [attr.y1]="radial().y1" [attr.x2]="radial().x2" [attr.y2]="radial().y2" />
+  <path class="angle-arc" [attr.d]="arc()" />
+  <text class="angle-label" [attr.x]="arcLabel().x" [attr.y]="arcLabel().y + 4" text-anchor="middle">{{ angleText() }}</text>
+
+  <!-- Burn -->
+  <line class="burn-arrow" [attr.x1]="burn().x" [attr.y1]="burn().y" [attr.x2]="burnArrow().x2" [attr.y2]="burnArrow().y2" marker-end="url(#ejection-arrow)" />
+  <circle data-testid="burn-point" class="burn-point" [attr.cx]="burn().x" [attr.cy]="burn().y" r="6" />
+</svg>

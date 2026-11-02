@@ -1,0 +1,19 @@
+<ol class="windows">
+  @for (row of rows(); track $index) {
+    <li>
+      <button type="button" class="window" [attr.aria-pressed]="selected() === $index" (click)="selected.set($index)">
+        <span class="departure">
+          {{ row.departure }}
+          <span class="muted">{{ row.wait }}</span>
+        </span>
+        <span class="flight"><span class="muted">flight</span> {{ row.flightTime }}</span>
+        <span class="dv">
+          {{ row.deltaV }}
+          @if (row.cheapest) {
+            <span class="badge">Cheapest</span>
+          }
+        </span>
+      </button>
+    </li>
+  }
+</ol>

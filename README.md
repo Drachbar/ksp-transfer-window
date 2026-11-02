@@ -1,59 +1,64 @@
-# KspTransferWindow
+# KSP Transfer Window
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.0.3.
+A transfer window planner for **Kerbal Space Program 1** (stock solar system).
+Tell it where you are, where you want to go and what day it is in your game,
+and it tells you **when to burn and how**: the upcoming launch windows, the
+ejection burn split into the prograde/normal values you enter in a manoeuvre
+node, the ejection angle, the phase angle and the Δv for the whole trip.
 
-## Development server
+Live at **<https://ksp.findersson.se>**.
 
-To start a local development server, run:
+## Credits
 
-```bash
-ng serve
-```
+This is a modernised rewrite of Alex Moon's
+[KSP Launch Window Planner](https://github.com/alexmoon/ksp). The orbital
+mechanics (Lambert solver, ejection and plane change calculations) are ported
+from that project, and the port is tested against reference results recorded
+from the original code (see below). The original application is kept in
+[`legacy/`](legacy/) for reference.
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Licence
 
-## Code scaffolding
+Like the original, this work is licensed under the
+[Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-nc-sa/4.0/)
+(see [LICENSE](LICENSE)). You are welcome to fork and modify it, as long as you
+give credit, do not use it commercially and share your changes under the same
+licence.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Development
 
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+Requires Node.js 24 (or ≥ 22.22.3).
 
 ```bash
-ng test
+npm ci
+npm start                 # dev server on http://localhost:4200
+npm test                  # unit tests (Vitest), in watch mode
+npm test -- --watch=false # single run, as in CI
+npm run build             # production build in dist/
 ```
 
-## Running end-to-end tests
+### Project layout
 
-For end-to-end (e2e) testing, run:
+| Path | What |
+| --- | --- |
+| `src/app/astro/` | Orbital mechanics in plain TypeScript (no Angular): vectors, quaternions, root finding, Lambert's problem, Keplerian orbits, the stock bodies, transfers. |
+| `src/app/search/` | Porkchop grid, transfer window finder and the Web Worker that runs it. |
+| `src/testing/legacy/` | Reference results recorded from the original JavaScript. |
+| `scripts/generate-legacy-fixtures.mjs` | Regenerates those reference results by running `legacy/javascripts/` in Node. |
+| `legacy/` | The original application (CoffeeScript sources and compiled JavaScript). |
 
-```bash
-ng e2e
-```
+### Differences from the original calculations
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+The port reproduces the original results to the last bit, except where a bug
+was fixed deliberately (each is covered by a test):
 
-## Additional Resources
+- The Lambert solver reported a `NaN` transfer angle for hyperbolic transfers.
+- The ejection refinement ("refine transfer") can diverge when the ejection
+  inclination is close to 0°. The window finder only accepts a refined result
+  that stays within 3 % of the estimate and otherwise reports the estimate.
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+### Deployment
+
+Pushes to `main` on the primary (Gitea) repository build a container image
+(`Containerfile`, static nginx on port 8080) via `.gitea/workflows/build.yml`
+and deploy it with Argo CD. Forks can ignore the `.gitea/` directory or adapt it.

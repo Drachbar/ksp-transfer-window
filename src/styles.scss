@@ -1,1 +1,83 @@
-/* You can add global styles to this file, and also import other style files */
+// Design tokens. Light by default, dark when the OS asks for it.
+:root {
+  color-scheme: light dark;
+
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --input-bg: #ffffff;
+  --text: #17202c;
+  --text-muted: #5a6575;
+  --border: #dde2ea;
+  --border-strong: #b5bfcd;
+  --accent: #0b6bcb;
+  --on-accent: #ffffff;
+  --accent-bg: #e6f0fb;
+  --planet: #2f7d4f;
+  --on-planet: #ffffff;
+  --warning: #b26a00;
+  --warning-bg: #fff4e0;
+  --danger: #c0262d;
+  --danger-bg: #fdecec;
+  --radius: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --surface: #161b23;
+    --input-bg: #0f141b;
+    --text: #e6eaf0;
+    --text-muted: #9aa5b4;
+    --border: #2a323d;
+    --border-strong: #46515f;
+    --accent: #5aa9ff;
+    --on-accent: #0b1220;
+    --accent-bg: #13253a;
+    --planet: #3d9a64;
+    --on-planet: #ffffff;
+    --warning: #f0a33a;
+    --warning-bg: #2b2112;
+    --danger: #ff6b6b;
+    --danger-bg: #2c1517;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+a {
+  color: var(--accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

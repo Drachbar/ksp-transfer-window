@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Sätt VERSION
+      - name: Set VERSION
         shell: bash
         run: |
           set -euo pipefail
@@ -42,7 +42,7 @@ jobs:
           fi
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
 
-      - name: Logga in i registry
+      - name: Log in to registry
         run: |
           echo "${{ secrets.REGISTRY_PASSWORD }}" \
             | docker login "${REGISTRY}" -u "${{ secrets.REGISTRY_USER }}" --password-stdin
@@ -58,12 +58,12 @@ jobs:
             --push \
             .
 
-      - name: Verifiera imagen
+      - name: Verify image
         run: |
           docker pull "${IMAGE}:${VERSION}"
           docker image inspect "${IMAGE}:${VERSION}" >/dev/null
 
-      - name: Bumpa k3s config
+      - name: Bump k3s config
         shell: bash
         env:
           GITEA_USER: ${{ secrets.CI_BOT_USER }}
@@ -97,5 +97,5 @@ jobs:
             git commit -m "chore(argocd): bump ksp-transfer-window to ${VERSION}"
             git push origin "HEAD:${K3S_BRANCH}"
           else
-            echo "Inga ändringar."
+            echo "No changes."
           fi

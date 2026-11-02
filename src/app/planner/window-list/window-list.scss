@@ -1,0 +1,79 @@
+:host {
+  display: block;
+}
+
+.windows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.window {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    'departure dv'
+    'flight dv';
+  gap: 0.125rem 1rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--border-strong);
+  }
+
+  &[aria-pressed='true'] {
+    border-color: var(--accent);
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+
+  @media (min-width: 720px) {
+    grid-template-columns: 1fr 9rem 9rem;
+    grid-template-areas: 'departure flight dv';
+  }
+}
+
+.departure {
+  grid-area: departure;
+  font-weight: 600;
+}
+
+.flight {
+  grid-area: flight;
+}
+
+.dv {
+  grid-area: dv;
+  justify-self: end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 0.9rem;
+}
+
+.badge {
+  margin-top: 0.125rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.7rem;
+  font-weight: 600;
+}

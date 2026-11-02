@@ -1,0 +1,78 @@
+@let v = view();
+@let m = mission();
+<article class="card">
+  <header class="card-header">
+    <h2>{{ heading() }}</h2>
+    <p class="total">
+      <span class="total-value" data-field="total">{{ v.total }}</span>
+      <span class="total-label">total Δv</span>
+    </p>
+  </header>
+
+  <section class="step" aria-labelledby="step-depart">
+    <h3 id="step-depart"><span class="step-number">1</span> Depart from {{ m.origin }}</h3>
+    <p class="when">
+      <span data-field="departure">{{ v.departure }}</span>
+      <span class="countdown" data-field="countdown">{{ v.countdown }}</span>
+    </p>
+    <dl class="facts">
+      <div>
+        <dt>Phase angle</dt>
+        <dd data-field="phase-angle">{{ v.phaseAngle }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="step" aria-labelledby="step-burn">
+    <h3 id="step-burn"><span class="step-number">2</span> Ejection burn from a {{ m.initialAltitudeKm }} km orbit</h3>
+    <div class="burn">
+      <dl class="facts">
+        <div class="fact-main">
+          <dt>Δv</dt>
+          <dd data-field="ejection">{{ v.ejection }}</dd>
+        </div>
+        <div>
+          <dt>Prograde</dt>
+          <dd data-field="prograde">{{ v.prograde }}</dd>
+        </div>
+        <div>
+          <dt>Normal</dt>
+          <dd data-field="normal">{{ v.normal }}</dd>
+        </div>
+        @if (v.ejectionAngle !== undefined) {
+          <div>
+            <dt>Ejection angle</dt>
+            <dd><span data-field="ejection-angle">{{ v.ejectionAngleText }}</span> from prograde</dd>
+          </div>
+        }
+      </dl>
+      @if (v.ejectionAngle !== undefined) {
+        <app-ejection-diagram [ejectionAngle]="v.ejectionAngle" [origin]="m.origin" [parent]="v.parent" />
+      }
+    </div>
+    @if (!v.refined) {
+      <p class="note" data-testid="estimate-note">
+        The ejection numbers are an estimate: refining them for the exact point where you leave {{ m.origin }}’s sphere of
+        influence did not converge. Expect to fine-tune the manoeuvre node a little.
+      </p>
+    }
+  </section>
+
+  <section class="step" aria-labelledby="step-arrive">
+    <h3 id="step-arrive"><span class="step-number">3</span> Arrive at {{ m.destination }}</h3>
+    <dl class="facts">
+      <div>
+        <dt>Arrival</dt>
+        <dd data-field="arrival">{{ v.arrival }}</dd>
+      </div>
+      <div>
+        <dt>Flight time</dt>
+        <dd data-field="flight-time">{{ v.flightTime }}</dd>
+      </div>
+      <div>
+        <dt>Capture burn @if (m.capture) {<span class="hint">into a {{ m.finalAltitudeKm }} km orbit</span>}</dt>
+        <dd data-field="capture">{{ v.capture }}</dd>
+      </div>
+    </dl>
+  </section>
+</article>

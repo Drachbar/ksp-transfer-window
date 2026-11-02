@@ -1,0 +1,58 @@
+<div class="layout">
+  <section class="panel form-panel" aria-labelledby="mission-heading">
+    <h2 id="mission-heading" class="panel-title">Your mission</h2>
+    <app-mission-form [form]="missionForm" />
+  </section>
+
+  <section class="results" aria-labelledby="results-heading" [attr.aria-busy]="progress() !== null">
+    <h2 id="results-heading" class="sr-only">Transfer windows</h2>
+
+    @if (progress() !== null) {
+      <div class="progress" role="progressbar" aria-label="Searching for transfer windows" aria-valuemin="0" aria-valuemax="100"
+           [attr.aria-valuenow]="progressPercent()">
+        <div class="progress-bar" [style.width.%]="progressPercent()"></div>
+      </div>
+    }
+
+    @if (error(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+
+    @if (result(); as r) {
+      <div class="result" [class.stale]="progress() !== null">
+        @if (summary(); as s) {
+          <p class="summary" data-testid="summary">
+            @switch (s.kind) {
+              @case ('wait') {
+                Leaving now costs <strong>{{ s.now }}</strong>. Waiting <strong>{{ s.wait }}</strong> for the next window saves
+                <strong>{{ s.saves }}</strong>.
+              }
+              @case ('go-now') {
+                Leaving now costs <strong>{{ s.now }}</strong>, less than the next window ({{ s.next }} in {{ s.wait }}), so go now.
+              }
+              @case ('same') {
+                Leaving now costs <strong>{{ s.now }}</strong>, as little as the next window, so go now.
+              }
+              @case ('no-now') {
+                There is no transfer you can start right now. The next window opens in <strong>{{ s.wait }}</strong>.
+              }
+            }
+          </p>
+        }
+
+        @if (selectedWindow(); as w) {
+          <app-window-card [window]="w" [mission]="resultMission()" [heading]="heading()" />
+        } @else {
+          <p class="empty">No transfer windows found for this route.</p>
+        }
+
+        @if (options().length > 1) {
+          <section class="upcoming" aria-labelledby="upcoming-heading">
+            <h2 id="upcoming-heading" class="panel-title">Upcoming windows</h2>
+            <app-window-list [windows]="options()" [mission]="resultMission()" [(selected)]="selected" />
+          </section>
+        }
+      </div>
+    }
+  </section>
+</div>
