@@ -1,0 +1,100 @@
+name: Build & Push (Podman/Docker)
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*', '*.*.*' ]
+
+env:
+  REGISTRY: gitea.findersson.se
+  IMAGE: gitea.findersson.se/findersson/ksp-transfer-window
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test -- --watch=false
+
+  build-push:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sätt VERSION
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF:-}" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+          else
+            VERSION="dev-${GITHUB_SHA::7}"
+          fi
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+
+      - name: Logga in i registry
+        run: |
+          echo "${{ secrets.REGISTRY_PASSWORD }}" \
+            | docker login "${REGISTRY}" -u "${{ secrets.REGISTRY_USER }}" --password-stdin
+
+      - name: Build & push
+        run: |
+          docker buildx create --use --name ci-builder || docker buildx use ci-builder
+          docker buildx build \
+            --pull \
+            -f Containerfile \
+            -t "${IMAGE}:${VERSION}" \
+            -t "${IMAGE}:latest" \
+            --push \
+            .
+
+      - name: Verifiera imagen
+        run: |
+          docker pull "${IMAGE}:${VERSION}"
+          docker image inspect "${IMAGE}:${VERSION}" >/dev/null
+
+      - name: Bumpa k3s config
+        shell: bash
+        env:
+          GITEA_USER: ${{ secrets.CI_BOT_USER }}
+          GITEA_TOKEN: ${{ secrets.CI_BOT_TOKEN_CONFIG }}
+          K3S_BRANCH: master
+          K3S_REPO: https://gitea.findersson.se/drachbar/k3s-config.git
+          K3S_FILE: apps/ksp-transfer-window/base/deployment.yaml
+        run: |
+          set -euo pipefail
+
+          cat > /tmp/askpass.sh <<'EOF'
+          #!/usr/bin/env bash
+          case "$1" in
+            *Username*) echo "${GITEA_USER}" ;;
+            *Password*) echo "${GITEA_TOKEN}" ;;
+          esac
+          EOF
+          chmod +x /tmp/askpass.sh
+          export GIT_ASKPASS=/tmp/askpass.sh
+          export GIT_TERMINAL_PROMPT=0
+
+          git clone --branch "${K3S_BRANCH}" --depth 1 "${K3S_REPO}"
+          cd k3s-config
+
+          sed -i -E 's|(image:\s*gitea\.findersson\.se/findersson/ksp-transfer-window:).*|\1'"${VERSION}"'|' "${K3S_FILE}"
+
+          git config user.name  "ci-bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+          git add "${K3S_FILE}"
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(argocd): bump ksp-transfer-window to ${VERSION}"
+            git push origin "HEAD:${K3S_BRANCH}"
+          else
+            echo "Inga ändringar."
+          fi

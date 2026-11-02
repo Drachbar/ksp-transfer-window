@@ -1,0 +1,45 @@
+{
+ "machineEpsilon": 1.1102230246251565e-16,
+ "cases": [
+  {
+   "method": "brentsMethod",
+   "fn": "cubic",
+   "a": 0,
+   "b": 3,
+   "relativeAccuracy": 0.000001,
+   "result": 2.0945514486033536
+  },
+  {
+   "method": "brentsMethod",
+   "fn": "cos",
+   "a": 0,
+   "b": 3,
+   "relativeAccuracy": 0.000001,
+   "result": 0.7390851332318854
+  },
+  {
+   "method": "brentsMethod",
+   "fn": "exp",
+   "a": 0,
+   "b": 3,
+   "relativeAccuracy": 0.000001,
+   "result": 1.0986122895024988
+  },
+  {
+   "method": "goldenSectionSearch",
+   "fn": "parabola",
+   "a": -5,
+   "b": 5,
+   "epsilon": 0.000001,
+   "result": 1.2340001261812752
+  },
+  {
+   "method": "goldenSectionSearch",
+   "fn": "sinus",
+   "a": 3,
+   "b": 6,
+   "epsilon": 0.0001,
+   "result": 4.712248813702757
+  }
+ ]
+}

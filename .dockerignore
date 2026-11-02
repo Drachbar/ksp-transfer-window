@@ -1,0 +1,10 @@
+.git
+.gitea
+.angular
+.claude
+.idea
+.vscode
+node_modules
+dist
+out-tsc
+legacy

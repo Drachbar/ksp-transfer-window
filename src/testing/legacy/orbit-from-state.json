@@ -1,0 +1,86 @@
+[
+ {
+  "referenceBody": "Kerbol",
+  "position": [
+   -10565458184.870586,
+   -8563103895.9286995,
+   0
+  ],
+  "velocity": [
+   6455.557837221056,
+   -8269.895633248727,
+   25
+  ],
+  "t": 1000000,
+  "semiMajorAxis": 18806105400.792553,
+  "eccentricity": 0.27739660262547605,
+  "inclination": 0.0023833424876753013,
+  "longitudeOfAscendingNode": 3.822691900185913,
+  "argumentOfPeriapsis": 6.198897463187077,
+  "timeOfPeriapsisPassage": 890831.2689021585,
+  "trueAnomalyAtPosition": 0.08428784399251098
+ },
+ {
+  "referenceBody": "Kerbol",
+  "position": [
+   4871611189.339344,
+   -2302832289.059274,
+   -658792226.3583767
+  ],
+  "velocity": [
+   3848.875701726991,
+   16167.918592587672,
+   251.08654712574273
+  ],
+  "t": 5000000,
+  "semiMajorAxis": 7532734763.424139,
+  "eccentricity": 0.3426398747132589,
+  "inclination": 0.12208633727175193,
+  "longitudeOfAscendingNode": 1.2136457444292685,
+  "argumentOfPeriapsis": 5.4841752256088,
+  "timeOfPeriapsisPassage": 1459255.8413389218,
+  "trueAnomalyAtPosition": -0.8555839342613659
+ },
+ {
+  "referenceBody": "Kerbol",
+  "position": [
+   -100934600168.40352,
+   39280627073.65994,
+   11052055829.660673
+  ],
+  "velocity": [
+   -660.0970562576615,
+   -3251.6377243550623,
+   -150.12159925817545
+  ],
+  "t": 20000000,
+  "semiMajorAxis": 111600194928.5954,
+  "eccentricity": 0.175221987048436,
+  "inclination": 0.10550275889492522,
+  "longitudeOfAscendingNode": 0.9290533575643034,
+  "argumentOfPeriapsis": 3.4473290999917117,
+  "timeOfPeriapsisPassage": -153056220.32896107,
+  "trueAnomalyAtPosition": -1.6073572986614717
+ },
+ {
+  "referenceBody": "Kerbin",
+  "position": [
+   24197495.16477795,
+   -40151679.58972108,
+   -3365093.4422275424
+  ],
+  "velocity": [
+   281.6518365849673,
+   188.71436996010473,
+   -0.05132680025301184
+  ],
+  "t": 400000,
+  "semiMajorAxis": 99932148.3574392,
+  "eccentricity": 0.5312306864922025,
+  "inclination": 0.07174863672627285,
+  "longitudeOfAscendingNode": 0.5924318991516708,
+  "argumentOfPeriapsis": 4.800389868400565,
+  "timeOfPeriapsisPassage": -2920981.9633301254,
+  "trueAnomalyAtPosition": -0.1379368806390821
+ }
+]
