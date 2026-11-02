@@ -54,6 +54,12 @@ export function formatDate(t: number, calendar: Calendar): string {
   return `Year ${d.year}, Day ${d.day}, ${d.hour}:${pad(d.minute)}:${pad(d.second)}`;
 }
 
+/** "Y1 D237 3:12" */
+export function formatShortDate(t: number, calendar: Calendar): string {
+  const d = toGameDate(t, calendar);
+  return `Y${d.year} D${d.day} ${d.hour}:${pad(d.minute)}`;
+}
+
 /** The two largest units, e.g. "258d 3h", "1y 47d", "3h 12m". */
 export function formatDuration(t: number, calendar: Calendar): string {
   const p = split(t, calendar);

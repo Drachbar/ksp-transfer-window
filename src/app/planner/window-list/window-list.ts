@@ -1,7 +1,7 @@
 import { Component, computed, input, model } from '@angular/core';
 import { calendarOf, nowOf, type Mission } from '../mission';
 import { formatDeltaV } from '../format';
-import { formatDate, formatDuration } from '../../astro/game-time';
+import { formatDuration, formatShortDate } from '../../astro/game-time';
 import type { TransferWindow } from '../../search/window-finder';
 
 /** The upcoming windows; pick one to see its details. */
@@ -21,12 +21,18 @@ export class WindowList {
     const calendar = calendarOf(this.mission());
     const now = nowOf(this.mission());
     const cheapest = windows.reduce((best, w, i) => (w.deltaV < windows[best].deltaV ? i : best), 0);
-    return windows.map((w, i) => ({
-      departure: formatDate(w.departureTime, calendar),
-      wait: w.departureTime - now < 1 ? 'now' : `in ${formatDuration(w.departureTime - now, calendar)}`,
-      flightTime: formatDuration(w.timeOfFlight, calendar),
-      deltaV: formatDeltaV(w.deltaV),
-      cheapest: i === cheapest,
-    }));
+    return windows.map((w, i) => {
+      const row = {
+        departure: formatShortDate(w.departureTime, calendar),
+        wait: w.departureTime - now < 1 ? 'now' : `in ${formatDuration(w.departureTime - now, calendar)}`,
+        flightTime: formatDuration(w.timeOfFlight, calendar),
+        deltaV: formatDeltaV(w.deltaV),
+        cheapest: i === cheapest,
+      };
+      return {
+        ...row,
+        label: `${row.departure}, ${row.wait}, flight ${row.flightTime}, ${row.deltaV}${row.cheapest ? ', cheapest' : ''}`,
+      };
+    });
   });
 }

@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { WindowList } from './window-list';
 import { sampleResult } from '../../../testing/sample-windows';
 import { DEFAULT_MISSION } from '../mission';
-import { formatDate, formatDuration, KERBIN_CALENDAR } from '../../astro/game-time';
+import { formatDuration, formatShortDate, KERBIN_CALENDAR } from '../../astro/game-time';
 import { formatDeltaV } from '../format';
 
 describe('WindowList', () => {
@@ -24,7 +24,7 @@ describe('WindowList', () => {
     expect(rows().length).toBe(windows.length);
     rows().forEach((row, i) => {
       const w = windows[i];
-      expect(row.textContent).toContain(formatDate(w.departureTime, KERBIN_CALENDAR));
+      expect(row.textContent).toContain(formatShortDate(w.departureTime, KERBIN_CALENDAR));
       expect(row.textContent).toContain(formatDuration(w.departureTime, KERBIN_CALENDAR));
       expect(row.textContent).toContain(formatDuration(w.timeOfFlight, KERBIN_CALENDAR));
       expect(row.textContent).toContain(formatDeltaV(w.deltaV));
@@ -34,7 +34,16 @@ describe('WindowList', () => {
   it('says "now" for a departure at the current time', async () => {
     fixture.componentRef.setInput('windows', [sampleResult().departNow!, ...windows]);
     await fixture.whenStable();
-    expect(rows()[0].querySelector('.departure .muted')!.textContent!.trim()).toBe('now');
+    expect(rows()[0].querySelector('.meta')!.textContent!.trim()).toMatch(/^now ·/);
+  });
+
+  it('gives each option a complete label for screen readers', () => {
+    const w = windows[0];
+    expect(rows()[0].getAttribute('aria-label')).toBe(
+      `${formatShortDate(w.departureTime, KERBIN_CALENDAR)}, in ${formatDuration(w.departureTime, KERBIN_CALENDAR)}, ` +
+        `flight ${formatDuration(w.timeOfFlight, KERBIN_CALENDAR)}, ${formatDeltaV(w.deltaV)}` +
+        (rows()[0].querySelector('.badge') ? ', cheapest' : ''),
+    );
   });
 
   it('selects the first window by default', () => {

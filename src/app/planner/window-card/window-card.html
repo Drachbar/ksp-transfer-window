@@ -3,20 +3,40 @@
 <article class="card">
   <header class="card-header">
     <h2>{{ heading() }}</h2>
-    <p class="total">
-      <span class="total-value" data-field="total">{{ v.total }}</span>
-      <span class="total-label">total Δv</span>
-    </p>
+    <dl class="summary" data-testid="burn-summary">
+      <div>
+        <dt>Depart</dt>
+        <dd>{{ v.departureShort }}</dd>
+      </div>
+      <div>
+        <dt>Prograde</dt>
+        <dd data-field="prograde">{{ v.prograde }}</dd>
+      </div>
+      <div>
+        <dt>Normal</dt>
+        <dd data-field="normal">{{ v.normal }}</dd>
+      </div>
+      @if (v.ejectionAngle !== undefined) {
+        <div>
+          <dt>Ejection angle</dt>
+          <dd data-field="ejection-angle">{{ v.ejectionAngleText }}</dd>
+        </div>
+      }
+      <div class="summary-total">
+        <dt>Total Δv</dt>
+        <dd data-field="total">{{ v.total }}</dd>
+      </div>
+    </dl>
   </header>
 
   <section class="step" aria-labelledby="step-depart">
     <h3 id="step-depart"><span class="step-number">1</span> Depart from {{ m.origin }}</h3>
+    <p class="instruction" data-testid="instruction">
+      Warp to <strong data-field="departure">{{ v.departure }}</strong>
+      (<span data-field="countdown">{{ v.countdown }}</span>). Then {{ v.alignment }}. Check it in the map view.
+    </p>
     <div class="split wide">
       <div>
-        <p class="when">
-          <span data-field="departure">{{ v.departure }}</span>
-          <span class="countdown" data-field="countdown">{{ v.countdown }}</span>
-        </p>
         <dl class="facts">
           <div>
             <dt>Phase angle</dt>
@@ -37,26 +57,20 @@
         Ejection burn
       }
     </h3>
+    <p class="instruction" data-testid="instruction">
+      @if (v.ejectionAngle !== undefined) {
+        Put a manoeuvre node on your parking orbit <strong>{{ v.ejectionAngleText }} from {{ m.origin }}’s prograde direction</strong>
+        (the marked point in the diagram) and pull <strong>{{ v.burn }}</strong>.
+      } @else {
+        Burn <strong>{{ v.burn }}</strong>.
+      }
+    </p>
     <div class="split">
       <dl class="facts">
         <div class="fact-main">
-          <dt>Δv</dt>
+          <dt>Burn Δv</dt>
           <dd data-field="ejection">{{ v.ejection }}</dd>
         </div>
-        <div>
-          <dt>Prograde</dt>
-          <dd data-field="prograde">{{ v.prograde }}</dd>
-        </div>
-        <div>
-          <dt>Normal</dt>
-          <dd data-field="normal">{{ v.normal }}</dd>
-        </div>
-        @if (v.ejectionAngle !== undefined) {
-          <div>
-            <dt>Ejection angle</dt>
-            <dd><span data-field="ejection-angle">{{ v.ejectionAngleText }}</span> from prograde</dd>
-          </div>
-        }
       </dl>
       @if (v.ejectionAngle !== undefined) {
         <app-ejection-diagram [ejectionAngle]="v.ejectionAngle" [origin]="m.origin" [parent]="v.parent" />
@@ -82,6 +96,10 @@
   @if (v.planeChange; as pc) {
     <section class="step" aria-labelledby="step-plane-change">
       <h3 id="step-plane-change"><span class="step-number">3</span> Mid-course plane change</h3>
+      <p class="instruction" data-testid="instruction">
+        Around <strong>{{ pc.time }}</strong>, burn <strong>{{ pc.deltaV }}</strong> normal or anti-normal to tilt your orbit
+        {{ pc.angle }} into {{ m.destination }}’s plane.
+      </p>
       <dl class="facts">
         <div class="fact-main">
           <dt>Δv</dt>
@@ -96,12 +114,19 @@
           <dd data-field="plane-change-angle">{{ pc.angle }}</dd>
         </div>
       </dl>
-      <p class="hint-text">Burn normal or anti-normal to line your orbit up with {{ m.destination }}’s.</p>
     </section>
   }
 
   <section class="step" aria-labelledby="step-arrive">
     <h3 id="step-arrive"><span class="step-number">{{ v.planeChange ? 4 : 3 }}</span> Arrive at {{ m.destination }}</h3>
+    <p class="instruction" data-testid="instruction">
+      @if (m.capture) {
+        At periapsis, burn <strong>{{ v.capture }}</strong> retrograde to capture into a {{ m.finalAltitudeKm }} km orbit around
+        {{ m.destination }}.
+      } @else {
+        Flyby: no capture burn. You pass {{ m.destination }} around {{ v.arrival }}.
+      }
+    </p>
     <dl class="facts">
       <div>
         <dt>Arrival</dt>

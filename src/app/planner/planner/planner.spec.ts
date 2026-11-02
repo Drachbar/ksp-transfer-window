@@ -4,7 +4,8 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { By } from '@angular/platform-browser';
 import { PorkchopPlot } from '../porkchop-plot/porkchop-plot';
 import { MISSION_STORAGE, STORAGE_KEY } from '../mission-state';
-import { Planner, SEARCH_DEBOUNCE_MS } from './planner';
+import { NARROW_SCREEN, Planner, SEARCH_DEBOUNCE_MS } from './planner';
+import { signal } from '@angular/core';
 import { WindowSearch } from '../../search/window-search';
 import type { WindowSearchRequest } from '../../search/window-search-protocol';
 import type { WindowSearchResult } from '../../search/window-finder';
@@ -177,6 +178,13 @@ describe('Planner', () => {
     expect(card.querySelector('[data-field="total"]')!.textContent).toBe(formatDeltaV(w.deltaV - 300));
   });
 
+  it('lets you choose a window above the details', async () => {
+    await finishSearch();
+    const list = el.querySelector('app-window-list')!;
+    const card = el.querySelector('app-window-card')!;
+    expect(list.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('shows the window picked in the list', async () => {
     await finishSearch();
     el.querySelectorAll<HTMLButtonElement>('app-window-list button.window')[2].click();
@@ -227,6 +235,96 @@ describe('Planner', () => {
     search.calls[0].reject(new DOMException('Search cancelled', 'AbortError'));
     await settle();
     expect(el.querySelector('[role="alert"]')).toBeNull();
+  });
+});
+
+describe('Planner search timing', () => {
+  it('searches straight away on load, and only debounces later changes', async () => {
+    const search = new FakeWindowSearch();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: WindowSearch, useValue: search },
+        { provide: SEARCH_DEBOUNCE_MS, useValue: 60_000 },
+        { provide: MISSION_STORAGE, useValue: null },
+      ],
+    });
+    const fixture = TestBed.createComponent(Planner);
+    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r));
+    expect(search.calls.length).toBe(1);
+
+    const day = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>('#mission-day')!;
+    day.value = '20';
+    day.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(search.calls.length).toBe(1); // still waiting for the debounce
+  });
+});
+
+describe('Planner on a narrow screen', () => {
+  let fixture: ComponentFixture<Planner>;
+  let search: FakeWindowSearch;
+  let el: HTMLElement;
+  const narrow = signal(true);
+
+  const settle = async () => {
+    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r));
+    await fixture.whenStable();
+  };
+
+  beforeEach(async () => {
+    narrow.set(true);
+    search = new FakeWindowSearch();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: WindowSearch, useValue: search },
+        { provide: SEARCH_DEBOUNCE_MS, useValue: 0 },
+        { provide: MISSION_STORAGE, useValue: null },
+        { provide: NARROW_SCREEN, useValue: narrow },
+      ],
+    });
+    fixture = TestBed.createComponent(Planner);
+    el = fixture.nativeElement as HTMLElement;
+    await settle();
+  });
+
+  const button = (label: string) => Array.from(el.querySelectorAll('button')).find((b) => b.textContent!.trim() === label);
+
+  it('shows the form until there are results', () => {
+    expect(el.querySelector('app-mission-form')).not.toBeNull();
+  });
+
+  it('folds the form into a one-line summary once there are results, so they come first', async () => {
+    search.calls[0].resolve(sampleResult());
+    await settle();
+    expect(el.querySelector('app-mission-form')).toBeNull();
+    const summary = el.querySelector('[data-testid="mission-summary"]')!.textContent!.replace(/\s+/g, ' ');
+    expect(summary).toContain('Kerbin → Duna');
+    expect(summary).toContain('Year 1, Day 1');
+  });
+
+  it('opens the form again for editing, and closes it when done', async () => {
+    search.calls[0].resolve(sampleResult());
+    await settle();
+    button('Edit')!.click();
+    await fixture.whenStable();
+    expect(el.querySelector('app-mission-form')).not.toBeNull();
+    button('Done')!.click();
+    await fixture.whenStable();
+    expect(el.querySelector('app-mission-form')).toBeNull();
+  });
+
+  it('always shows the form on a wide screen', async () => {
+    narrow.set(false);
+    search.calls[0].resolve(sampleResult());
+    await settle();
+    expect(el.querySelector('app-mission-form')).not.toBeNull();
+    expect(button('Edit')).toBeUndefined();
+    expect(button('Done')).toBeUndefined();
   });
 });
 

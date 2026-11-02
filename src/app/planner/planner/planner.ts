@@ -1,4 +1,4 @@
-import { Component, computed, effect, ElementRef, inject, InjectionToken, signal, viewChild } from '@angular/core';
+import { Component, computed, DestroyRef, effect, ElementRef, inject, InjectionToken, signal, viewChild, type Signal } from '@angular/core';
 import { form } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { loadStoredMission, MISSION_STORAGE, missionFromQueryParams, missionToQueryParams, restoreMission, storeMission } from '../mission-state';
@@ -15,6 +15,20 @@ import { toSearchParams } from '../../search/window-search-protocol';
 
 /** How long to wait after the last change before searching (ms). */
 export const SEARCH_DEBOUNCE_MS = new InjectionToken<number>('SEARCH_DEBOUNCE_MS', { providedIn: 'root', factory: () => 300 });
+
+/** True on screens too narrow for the form and the results side by side. */
+export const NARROW_SCREEN = new InjectionToken<Signal<boolean>>('NARROW_SCREEN', {
+  providedIn: 'root',
+  factory: () => {
+    if (typeof matchMedia !== 'function') return signal(false);
+    const query = matchMedia('(max-width: 959px)');
+    const narrow = signal(query.matches);
+    const update = () => narrow.set(query.matches);
+    query.addEventListener?.('change', update);
+    inject(DestroyRef).onDestroy(() => query.removeEventListener?.('change', update));
+    return narrow.asReadonly();
+  },
+});
 
 const isAbort = (e: unknown) => e instanceof DOMException && e.name === 'AbortError';
 
@@ -47,11 +61,25 @@ export class Planner {
   protected readonly progress = signal<number | null>(null);
   protected readonly error = signal<string | null>(null);
   protected readonly selected = signal(0);
+  private searchedOnce = false;
   /** A transfer picked in the porkchop plot; shown instead of the selected window. */
   protected readonly picked = signal<TransferWindow | null>(null);
   /** What the picked transfer is: a point from the plot or a suggested plane change. */
   private readonly pickedLabel = signal('Selected point');
   protected readonly showPlot = signal(false);
+
+  protected readonly narrow = inject(NARROW_SCREEN);
+  /** On a narrow screen the form folds away once there are results; this opens it again. */
+  protected readonly editing = signal(false);
+  protected readonly formOpen = computed(() => !this.narrow() || this.editing() || !this.result());
+  protected readonly missionSummary = computed(() => {
+    const m = this.mission();
+    return {
+      route: `${m.origin} → ${m.destination}`,
+      date: `Year ${m.year}, Day ${m.day}`,
+      orbits: m.capture ? `${m.initialAltitudeKm} km → ${m.finalAltitudeKm} km` : `${m.initialAltitudeKm} km, flyby`,
+    };
+  });
   private readonly card = viewChild('card', { read: ElementRef });
 
   protected readonly pickedSummary = computed(() => {
@@ -104,7 +132,10 @@ export class Planner {
     effect((onCleanup) => {
       if (!this.missionForm().valid()) return;
       const mission = this.mission();
-      const timer = setTimeout(() => this.search(mission), this.debounceMs);
+      // Debounce typing, but do not keep the first search waiting: there is nothing to wait for.
+      const delay = this.searchedOnce ? this.debounceMs : 0;
+      this.searchedOnce = true;
+      const timer = setTimeout(() => this.search(mission), delay);
       onCleanup(() => clearTimeout(timer));
     });
   }

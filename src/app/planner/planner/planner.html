@@ -1,7 +1,22 @@
 <div class="layout">
   <section class="panel form-panel" aria-labelledby="mission-heading">
-    <h2 id="mission-heading" class="panel-title">Your mission</h2>
-    <app-mission-form [form]="missionForm" />
+    <div class="section-header">
+      <h2 id="mission-heading" class="panel-title">Your mission</h2>
+      @if (narrow() && result()) {
+        <button type="button" class="link-button" [attr.aria-expanded]="formOpen()" aria-controls="mission-form"
+                (click)="editing.set(!editing())">
+          {{ editing() ? 'Done' : 'Edit' }}
+        </button>
+      }
+    </div>
+    @if (formOpen()) {
+      <app-mission-form id="mission-form" [form]="missionForm" />
+    } @else {
+      <p class="mission-summary" data-testid="mission-summary">
+        <strong>{{ missionSummary().route }}</strong>
+        <span>{{ missionSummary().date }} · {{ missionSummary().orbits }}</span>
+      </p>
+    }
   </section>
 
   <section class="results" aria-labelledby="results-heading" [attr.aria-busy]="progress() !== null">
@@ -40,17 +55,17 @@
           </p>
         }
 
+        @if (options().length > 1) {
+          <section class="upcoming" aria-labelledby="upcoming-heading">
+            <h2 id="upcoming-heading" class="panel-title">Choose a window</h2>
+            <app-window-list [windows]="options()" [mission]="resultMission()" [selected]="selected()" (selectedChange)="selectFromList($event)" />
+          </section>
+        }
+
         @if (selectedWindow(); as w) {
           <app-window-card #card [window]="w" [mission]="resultMission()" [heading]="heading()" (showAlternative)="showPlaneChange($event)" />
         } @else {
           <p class="empty">No transfer windows found for this route.</p>
-        }
-
-        @if (options().length > 1) {
-          <section class="upcoming" aria-labelledby="upcoming-heading">
-            <h2 id="upcoming-heading" class="panel-title">Upcoming windows</h2>
-            <app-window-list [windows]="options()" [mission]="resultMission()" [selected]="selected()" (selectedChange)="selectFromList($event)" />
-          </section>
         }
 
         @if (listWindow(); as center) {

@@ -2,8 +2,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { WindowCard } from './window-card';
 import { sampleResult } from '../../../testing/sample-windows';
 import { DEFAULT_MISSION, type Mission } from '../mission';
-import { formatDate, formatDuration, KERBIN_CALENDAR } from '../../astro/game-time';
-import { formatAngle, formatDeltaV, formatSignedDeltaV } from '../format';
+import { formatDate, formatDuration, formatShortDate, KERBIN_CALENDAR } from '../../astro/game-time';
+import { describeBurn, formatAngle, formatDeltaV, formatSignedDeltaV } from '../format';
+import { describePhase } from '../solar-system-diagram/solar-system-layout';
 import type { TransferWindow } from '../../search/window-finder';
 
 describe('WindowCard', () => {
@@ -22,6 +23,54 @@ describe('WindowCard', () => {
 
   it('shows the heading', async () => {
     expect((await render()).querySelector('h2')!.textContent).toContain('Next window');
+  });
+
+  describe('burn summary', () => {
+    it('puts everything you enter in the game in one row at the top', async () => {
+      const el = await render();
+      const summary = el.querySelector('header [data-testid="burn-summary"]')!;
+      const item = (label: string) =>
+        Array.from(summary.querySelectorAll('div')).find((d) => d.querySelector('dt')!.textContent!.trim() === label)?.querySelector('dd')?.textContent?.trim();
+      expect(item('Depart')).toBe(formatShortDate(window.departureTime, KERBIN_CALENDAR));
+      expect(item('Prograde')).toBe(formatSignedDeltaV(window.details.ejectionProgradeDeltaV));
+      expect(item('Normal')).toBe(formatSignedDeltaV(window.details.ejectionNormalDeltaV));
+      expect(item('Ejection angle')).toBe(formatAngle(window.transfer.ejectionAngle));
+      expect(item('Total Δv')).toBe(formatDeltaV(window.deltaV));
+    });
+
+    it('leaves out the ejection angle without a parking orbit', async () => {
+      const el = await render({ ...window, transfer: { ...window.transfer, ejectionAngle: undefined } });
+      expect(el.querySelector('[data-testid="burn-summary"]')!.textContent).not.toContain('Ejection angle');
+    });
+  });
+
+  describe('how to fly it', () => {
+    const instruction = (el: HTMLElement, step: string) =>
+      el.querySelector(`[aria-labelledby="${step}"] [data-testid="instruction"]`)!.textContent!.replace(/\s+/g, ' ').trim();
+
+    it('says when to leave and what the alignment should look like', async () => {
+      const el = await render();
+      const text = instruction(el, 'step-depart');
+      expect(text).toContain(`Warp to ${formatDate(window.departureTime, KERBIN_CALENDAR)} (in ${formatDuration(window.departureTime, KERBIN_CALENDAR)}).`);
+      expect(text).toContain(`${describePhase('Duna', 'Kerbin', window.phaseAngle)}.`);
+    });
+
+    it('says where to put the manoeuvre node and what to pull', async () => {
+      const el = await render();
+      const text = instruction(el, 'step-burn');
+      expect(text).toContain(`${formatAngle(window.transfer.ejectionAngle)} from Kerbin’s prograde direction`);
+      expect(text).toContain(describeBurn(window.details.ejectionProgradeDeltaV, window.details.ejectionNormalDeltaV));
+    });
+
+    it('says how to capture at the destination', async () => {
+      const el = await render();
+      expect(instruction(el, 'step-arrive')).toContain(`burn ${formatDeltaV(window.transfer.insertionDeltaV)} retrograde to capture into a 100 km orbit`);
+    });
+
+    it('says there is nothing to do on arrival for a flyby', async () => {
+      const el = await render(window, { ...DEFAULT_MISSION, capture: false });
+      expect(instruction(el, 'step-arrive')).toContain('no capture burn');
+    });
   });
 
   it('shows when to leave, and how long until then', async () => {

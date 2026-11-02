@@ -1,4 +1,4 @@
-import { EARTH_CALENDAR, formatDate, formatDuration, fromGameDate, KERBIN_CALENDAR, toGameDate } from './game-time';
+import { EARTH_CALENDAR, formatDate, formatDuration, formatShortDate, fromGameDate, KERBIN_CALENDAR, toGameDate } from './game-time';
 
 const KDAY = 6 * 3600;
 const KYEAR = 426 * KDAY;
@@ -33,6 +33,13 @@ describe('game time', () => {
     it('formats like KSP', () => {
       expect(formatDate(236 * KDAY + 3 * 3600 + 12 * 60 + 5, KERBIN_CALENDAR)).toBe('Year 1, Day 237, 3:12:05');
       expect(formatDate(KYEAR, KERBIN_CALENDAR)).toBe('Year 2, Day 1, 0:00:00');
+    });
+  });
+
+  describe('formatShortDate', () => {
+    it('formats compactly, to the minute', () => {
+      expect(formatShortDate(236 * KDAY + 3 * 3600 + 12 * 60 + 59, KERBIN_CALENDAR)).toBe('Y1 D237 3:12');
+      expect(formatShortDate(KYEAR + 5 * 60, KERBIN_CALENDAR)).toBe('Y2 D1 0:05');
     });
   });
 

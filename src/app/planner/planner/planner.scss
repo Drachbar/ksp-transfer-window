@@ -31,12 +31,15 @@
 
 .results {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   min-width: 0;
 }
 
 .result {
   display: grid;
+  // minmax(0, …) lets wide children (the swipeable window row) scroll instead of widening the page
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   transition: opacity 150ms;
 
@@ -117,4 +120,19 @@
   align-items: center;
   gap: 0.5rem 0.75rem;
   margin: 0.75rem 0 0;
+}
+
+.mission-summary {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+
+  span {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+}
+
+.form-panel .section-header {
+  margin-top: 0;
 }

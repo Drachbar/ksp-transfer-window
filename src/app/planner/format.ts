@@ -24,3 +24,12 @@ export function formatAngle(radians: number | undefined | null, decimals = 0): s
   const degrees = Number(((radians * 180) / Math.PI).toFixed(decimals));
   return `${degrees < 0 ? MINUS : ''}${Math.abs(degrees).toFixed(decimals)}°`;
 }
+
+/** "1,027 m/s prograde and 205 m/s anti-normal": the manoeuvre node handles to pull. */
+export function describeBurn(prograde: number, normal: number): string {
+  const part = (v: number, positive: string, negative: string) => {
+    const rounded = Math.round(v);
+    return rounded === 0 ? null : `${integer.format(Math.abs(rounded))} m/s ${rounded > 0 ? positive : negative}`;
+  };
+  return [part(prograde, 'prograde', 'retrograde'), part(normal, 'normal', 'anti-normal')].filter(Boolean).join(' and ');
+}

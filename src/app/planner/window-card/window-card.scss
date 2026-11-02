@@ -10,11 +10,8 @@
 }
 
 .card-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
+  display: grid;
+  gap: 0.75rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border);
 }
@@ -24,22 +21,39 @@ h2 {
   font-size: 1.25rem;
 }
 
-.total {
-  margin: 0;
-  display: flex;
-  align-items: baseline;
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
   gap: 0.5rem;
+  margin: 0;
+
+  div {
+    padding: 0.5rem 0.65rem;
+    border-radius: calc(var(--radius) / 2);
+    background: var(--accent-bg);
+  }
+
+  dt {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
+
+  dd {
+    margin: 0.1rem 0 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
 }
 
-.total-value {
-  font-size: 1.75rem;
-  font-weight: 700;
+.summary-total dd {
   color: var(--accent);
-  font-variant-numeric: tabular-nums;
 }
 
-.total-label {
-  color: var(--text-muted);
+.instruction {
+  margin: 0 0 1rem;
+  line-height: 1.5;
 }
 
 .step {

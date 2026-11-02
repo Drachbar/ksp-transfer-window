@@ -2,8 +2,9 @@ import { Component, computed, input, output } from '@angular/core';
 import { EjectionDiagram } from '../ejection-diagram/ejection-diagram';
 import { SolarSystemDiagram } from '../solar-system-diagram/solar-system-diagram';
 import { calendarOf, nowOf, type Mission } from '../mission';
-import { formatAngle, formatDeltaV, formatSignedDeltaV } from '../format';
-import { formatDate, formatDuration } from '../../astro/game-time';
+import { describeBurn, formatAngle, formatDeltaV, formatSignedDeltaV } from '../format';
+import { describePhase } from '../solar-system-diagram/solar-system-layout';
+import { formatDate, formatDuration, formatShortDate } from '../../astro/game-time';
 import { BODIES } from '../../astro/bodies';
 import type { TransferWindow } from '../../search/window-finder';
 
@@ -28,6 +29,9 @@ export class WindowCard {
     const wait = w.departureTime - nowOf(m);
     return {
       departure: formatDate(w.departureTime, calendar),
+      departureShort: formatShortDate(w.departureTime, calendar),
+      alignment: describePhase(m.destination, m.origin, w.phaseAngle),
+      burn: describeBurn(w.details.ejectionProgradeDeltaV, w.details.ejectionNormalDeltaV),
       countdown: wait < 1 ? 'now' : `in ${formatDuration(wait, calendar)}`,
       total: formatDeltaV(w.deltaV),
       ejection: formatDeltaV(w.transfer.ejectionDeltaV),
