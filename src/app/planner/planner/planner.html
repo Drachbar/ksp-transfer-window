@@ -41,7 +41,7 @@
         }
 
         @if (selectedWindow(); as w) {
-          <app-window-card [window]="w" [mission]="resultMission()" [heading]="heading()" />
+          <app-window-card #card [window]="w" [mission]="resultMission()" [heading]="heading()" />
         } @else {
           <p class="empty">No transfer windows found for this route.</p>
         }
@@ -49,7 +49,33 @@
         @if (options().length > 1) {
           <section class="upcoming" aria-labelledby="upcoming-heading">
             <h2 id="upcoming-heading" class="panel-title">Upcoming windows</h2>
-            <app-window-list [windows]="options()" [mission]="resultMission()" [(selected)]="selected" />
+            <app-window-list [windows]="options()" [mission]="resultMission()" [selected]="selected()" (selectedChange)="selectFromList($event)" />
+          </section>
+        }
+
+        @if (listWindow(); as center) {
+          <section class="panel-flat" aria-labelledby="porkchop-heading">
+            <div class="section-header">
+              <h2 id="porkchop-heading" class="panel-title">Porkchop plot</h2>
+              <button type="button" class="link-button" [attr.aria-expanded]="showPlot()" (click)="showPlot.set(!showPlot())">
+                {{ showPlot() ? 'Hide porkchop plot' : 'Show porkchop plot' }}
+              </button>
+            </div>
+            @if (showPlot()) {
+              @defer {
+                <app-porkchop-plot [mission]="resultMission()" [windows]="r.windows" [center]="center" (pick)="pickFromPlot($event)" />
+                @if (pickedSummary(); as p) {
+                  <p class="picked" data-testid="picked" aria-live="polite">
+                    Selected: depart <strong>{{ p.departure }}</strong>, flight {{ p.flight }}, <strong>{{ p.deltaV }}</strong>.
+                    <button type="button" class="link-button" (click)="showCard()">Show details</button>
+                  </p>
+                }
+              } @loading {
+                <p class="empty">Loading…</p>
+              }
+            } @else {
+              <p class="empty">Every departure date and flight time around this window, coloured by Δv.</p>
+            }
           </section>
         }
       </div>

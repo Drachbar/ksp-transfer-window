@@ -1,4 +1,4 @@
-import { findTransferWindows, type WindowSearchParams, type WindowSearchResult } from './window-finder';
+import { describeTransfer, findTransferWindows, type WindowSearchParams, type WindowSearchResult } from './window-finder';
 import { defaultSearchRanges } from './ranges';
 import { transfer } from '../astro/transfer';
 import { Orbit } from '../astro/orbit';
@@ -163,6 +163,15 @@ describe('findTransferWindows', () => {
     expect(windows.length).toBe(2);
     for (const w of windows) expect(Number.isFinite(w.deltaV)).toBe(true);
     expect(departNow).not.toBeNull();
+  });
+
+  it('describes any departure time and time of flight the same way as a found window', () => {
+    const params = paramsFor('Kerbin', 'Duna', 0, 1);
+    const [w] = findTransferWindows(params).windows;
+    expect(describeTransfer(params, w.departureTime, w.timeOfFlight)).toEqual(w);
+    const other = describeTransfer(params, w.departureTime + 10 * 21600, w.timeOfFlight - 5 * 21600);
+    expect(other.deltaV).toBeGreaterThan(w.deltaV);
+    expect(other.arrivalTime).toBe(w.departureTime + 10 * 21600 + w.timeOfFlight - 5 * 21600);
   });
 
   it('rejects bodies that do not orbit the same parent', () => {

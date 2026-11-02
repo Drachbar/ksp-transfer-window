@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { WindowSearch, WINDOW_SEARCH_WORKER } from './window-search';
-import { runWindowSearch, type WindowSearchRequest, type WorkerRequest, type WorkerResponse } from './window-search-protocol';
+import { handleWorkerRequest, type WindowSearchRequest, type WorkerRequest, type WorkerResponse } from './window-search-protocol';
 import { findTransferWindows } from './window-finder';
 import { toSearchParams } from './window-search-protocol';
 
@@ -23,7 +23,7 @@ class FakeWorker {
   }
   postMessage(message: WorkerRequest) {
     setTimeout(() =>
-      runWindowSearch(message, (m) => {
+      handleWorkerRequest(message, (m) => {
         if (!this.terminated) this.onmessage?.({ data: structuredClone(m) } as MessageEvent<WorkerResponse>);
       }),
     );
@@ -62,6 +62,29 @@ describe('WindowSearch', () => {
       await expect(first).rejects.toMatchObject({ name: 'AbortError' });
       expect(FakeWorker.instances[0].terminated).toBe(true);
       expect((await second).windows.length).toBe(1);
+    });
+
+    it('computes porkchop grids', async () => {
+      const progress: number[] = [];
+      const grid = await service.porkchop({ ...request, earliestDeparture: 0, departureSpan: 1e7, width: 6, height: 5 }, (f) => progress.push(f));
+      expect(grid.deltaVs.length).toBe(30);
+      expect(Number.isFinite(grid.minDeltaV)).toBe(true);
+      expect(progress.at(-1)).toBe(1);
+    });
+
+    it('does not let a porkchop request cancel a window search, or vice versa', async () => {
+      const windows = service.search(request);
+      const grid = service.porkchop({ ...request, earliestDeparture: 0, departureSpan: 1e7, width: 4, height: 4 });
+      await expect(windows).resolves.toBeTruthy();
+      await expect(grid).resolves.toBeTruthy();
+    });
+
+    it('cancels a running porkchop when a new one starts', async () => {
+      const p = { ...request, earliestDeparture: 0, departureSpan: 1e7, width: 4, height: 4 };
+      const first = service.porkchop(p);
+      const second = service.porkchop(p);
+      await expect(first).rejects.toMatchObject({ name: 'AbortError' });
+      await expect(second).resolves.toBeTruthy();
     });
 
     it('rejects when the search fails', async () => {

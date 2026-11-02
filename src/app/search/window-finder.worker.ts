@@ -1,5 +1,7 @@
 /// <reference lib="webworker" />
 
-import { runWindowSearch, type WorkerRequest } from './window-search-protocol';
+import { handleWorkerRequest, type WorkerRequest } from './window-search-protocol';
 
-addEventListener('message', ({ data }: MessageEvent<WorkerRequest>) => runWindowSearch(data, (message) => postMessage(message)));
+addEventListener('message', ({ data }: MessageEvent<WorkerRequest>) =>
+  handleWorkerRequest(data, (message, transfer) => postMessage(message, transfer ?? [])),
+);

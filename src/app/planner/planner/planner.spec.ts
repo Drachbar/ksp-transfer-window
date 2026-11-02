@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { By } from '@angular/platform-browser';
+import { PorkchopPlot } from '../porkchop-plot/porkchop-plot';
 import { MISSION_STORAGE, STORAGE_KEY } from '../mission-state';
 import { Planner, SEARCH_DEBOUNCE_MS } from './planner';
 import { WindowSearch } from '../../search/window-search';
@@ -20,6 +22,11 @@ interface PendingSearch {
 
 class FakeWindowSearch {
   calls: PendingSearch[] = [];
+  porkchopRequests: unknown[] = [];
+  porkchop(request: unknown) {
+    this.porkchopRequests.push(request);
+    return new Promise<never>(() => {});
+  }
   search(request: WindowSearchRequest, onProgress?: (f: number) => void) {
     return new Promise<WindowSearchResult>((resolve, reject) => this.calls.push({ request, onProgress, resolve, reject }));
   }
@@ -105,6 +112,57 @@ describe('Planner', () => {
       rows[1].click();
       await fixture.whenStable();
       expect(el.querySelector('app-window-card')!.textContent).toContain('Next window');
+    });
+  });
+
+  describe('porkchop plot', () => {
+    const showPlot = async () => {
+      await finishSearch();
+      Array.from(el.querySelectorAll<HTMLButtonElement>('button')).find((b) => b.textContent!.includes('porkchop'))!.click();
+      await settle();
+      await settle();
+    };
+    const plot = () => fixture.debugElement.query(By.directive(PorkchopPlot))?.componentInstance as PorkchopPlot | undefined;
+
+    it('is only calculated when asked for', async () => {
+      await finishSearch();
+      expect(plot()).toBeUndefined();
+      expect(search.porkchopRequests.length).toBe(0);
+      await showPlot();
+      expect(plot()).toBeDefined();
+      expect(search.porkchopRequests.length).toBe(1);
+    });
+
+    it('shows the point picked in the plot', async () => {
+      await showPlot();
+      const w = result.windows[1];
+      plot()!.pick.emit({ departureTime: w.departureTime + 5 * 21600, timeOfFlight: w.timeOfFlight });
+      await fixture.whenStable();
+      const card = el.querySelector('app-window-card')!;
+      expect(card.textContent).toContain('Selected point');
+      expect(card.textContent).toContain(formatDate(w.departureTime + 5 * 21600, KERBIN_CALENDAR));
+    });
+
+    it('confirms the pick next to the plot, with a way to jump to the details', async () => {
+      await showPlot();
+      const w = result.windows[0];
+      plot()!.pick.emit({ departureTime: w.departureTime, timeOfFlight: w.timeOfFlight });
+      await fixture.whenStable();
+      const note = el.querySelector('[data-testid="picked"]')!;
+      expect(note.textContent).toContain(formatDate(w.departureTime, KERBIN_CALENDAR));
+      const card = el.querySelector('app-window-card') as HTMLElement;
+      card.scrollIntoView = vi.fn();
+      Array.from(note.querySelectorAll('button')).find((b) => b.textContent!.includes('Show details'))!.click();
+      expect(card.scrollIntoView).toHaveBeenCalled();
+    });
+
+    it('goes back to a window when one is picked in the list', async () => {
+      await showPlot();
+      plot()!.pick.emit({ departureTime: result.windows[0].departureTime + 21600, timeOfFlight: result.windows[0].timeOfFlight });
+      await fixture.whenStable();
+      el.querySelectorAll<HTMLButtonElement>('app-window-list button.window')[1].click();
+      await fixture.whenStable();
+      expect(el.querySelector('app-window-card')!.textContent).toContain('Window 2');
     });
   });
 

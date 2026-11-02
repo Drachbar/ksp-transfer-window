@@ -73,6 +73,48 @@ export interface WindowSearchResult {
 /** Largest relative Δv change from refinement that is accepted as converged. */
 const MAX_REFINEMENT_CHANGE = 0.03;
 
+/** The full description of the transfer departing at t0 and arriving at t0 + dt. */
+export function describeTransfer(params: WindowSearchParams, t0: number, dt: number): TransferWindow {
+  const { origin, destination, initialOrbitalVelocity, finalOrbitalVelocity } = params;
+  const transferType = params.transferType ?? 'ballistic';
+  const initial = transfer(
+    transferType,
+    origin,
+    destination,
+    t0,
+    dt,
+    initialOrbitalVelocity,
+    finalOrbitalVelocity,
+  );
+  const candidate = refineTransfer(
+    initial,
+    transferType,
+    origin,
+    destination,
+    t0,
+    dt,
+    initialOrbitalVelocity,
+    finalOrbitalVelocity,
+  );
+  // The refinement only corrects for where the craft leaves the SoI, which changes the Δv by
+  // well under a percent. A larger change (or NaN) means it diverged; use the estimate then.
+  const refined =
+    Number.isFinite(candidate.deltaV) &&
+    Math.abs(candidate.deltaV - initial.deltaV) <= MAX_REFINEMENT_CHANGE * initial.deltaV;
+  const best = refined ? candidate : initial;
+  return {
+    departureTime: t0,
+    timeOfFlight: dt,
+    arrivalTime: t0 + dt,
+    deltaV: best.deltaV,
+    transfer: best,
+    refined,
+    details: transferDetails(best, origin, t0, initialOrbitalVelocity),
+    phaseAngle: origin.orbit!.phaseAngle(destination.orbit!, t0),
+    departureVelocity: initial.ejectionVelocity,
+  };
+}
+
 export function findTransferWindows(
   params: WindowSearchParams,
   onProgress?: (fraction: number) => void,
@@ -130,44 +172,7 @@ export function findTransferWindows(
           finalOrbitalVelocity,
         ).deltaV;
 
-  const describe = (t0: number, dt: number): TransferWindow => {
-    const initial = transfer(
-      transferType,
-      origin,
-      destination,
-      t0,
-      dt,
-      initialOrbitalVelocity,
-      finalOrbitalVelocity,
-    );
-    const candidate = refineTransfer(
-      initial,
-      transferType,
-      origin,
-      destination,
-      t0,
-      dt,
-      initialOrbitalVelocity,
-      finalOrbitalVelocity,
-    );
-    // The refinement only corrects for where the craft leaves the SoI, which changes the Δv by
-    // well under a percent. A larger change (or NaN) means it diverged; use the estimate then.
-    const refined =
-      Number.isFinite(candidate.deltaV) &&
-      Math.abs(candidate.deltaV - initial.deltaV) <= MAX_REFINEMENT_CHANGE * initial.deltaV;
-    const best = refined ? candidate : initial;
-    return {
-      departureTime: t0,
-      timeOfFlight: dt,
-      arrivalTime: t0 + dt,
-      deltaV: best.deltaV,
-      transfer: best,
-      refined,
-      details: transferDetails(best, origin, t0, initialOrbitalVelocity),
-      phaseAngle: origin.orbit!.phaseAngle(destination.orbit!, t0),
-      departureVelocity: initial.ejectionVelocity,
-    };
-  };
+  const describe = (t0: number, dt: number) => describeTransfer(params, t0, dt);
 
   // Local minima of the column profile, each the lowest within ±0.35 synodic periods
   const radius = Math.max(1, Math.round(0.35 * perSynodic));

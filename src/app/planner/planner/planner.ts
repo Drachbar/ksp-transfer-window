@@ -1,15 +1,17 @@
-import { Component, computed, effect, inject, InjectionToken, signal } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, InjectionToken, signal, viewChild } from '@angular/core';
 import { form } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { loadStoredMission, MISSION_STORAGE, missionFromQueryParams, missionToQueryParams, restoreMission, storeMission } from '../mission-state';
 import { MissionForm } from '../mission-form/mission-form';
 import { WindowCard } from '../window-card/window-card';
 import { WindowList } from '../window-list/window-list';
+import { PorkchopPlot, type PorkchopPick } from '../porkchop-plot/porkchop-plot';
 import { calendarOf, missionSchema, nowOf, toSearchRequest, type Mission } from '../mission';
 import { formatDeltaV } from '../format';
-import { formatDuration } from '../../astro/game-time';
+import { formatDate, formatDuration } from '../../astro/game-time';
 import { WindowSearch } from '../../search/window-search';
-import type { WindowSearchResult } from '../../search/window-finder';
+import { describeTransfer, type TransferWindow, type WindowSearchResult } from '../../search/window-finder';
+import { toSearchParams } from '../../search/window-search-protocol';
 
 /** How long to wait after the last change before searching (ms). */
 export const SEARCH_DEBOUNCE_MS = new InjectionToken<number>('SEARCH_DEBOUNCE_MS', { providedIn: 'root', factory: () => 300 });
@@ -18,7 +20,7 @@ const isAbort = (e: unknown) => e instanceof DOMException && e.name === 'AbortEr
 
 @Component({
   selector: 'app-planner',
-  imports: [MissionForm, WindowCard, WindowList],
+  imports: [MissionForm, WindowCard, WindowList, PorkchopPlot],
   templateUrl: './planner.html',
   styleUrl: './planner.scss',
 })
@@ -45,6 +47,17 @@ export class Planner {
   protected readonly progress = signal<number | null>(null);
   protected readonly error = signal<string | null>(null);
   protected readonly selected = signal(0);
+  /** A transfer picked in the porkchop plot; shown instead of the selected window. */
+  protected readonly picked = signal<TransferWindow | null>(null);
+  protected readonly showPlot = signal(false);
+  private readonly card = viewChild('card', { read: ElementRef });
+
+  protected readonly pickedSummary = computed(() => {
+    const p = this.picked();
+    if (!p) return null;
+    const calendar = calendarOf(this.resultMission());
+    return { departure: formatDate(p.departureTime, calendar), flight: formatDuration(p.timeOfFlight, calendar), deltaV: formatDeltaV(p.deltaV) };
+  });
 
   /** Leaving right now, when that is cheaper than waiting for the next window (e.g. a window that is open now). */
   private readonly leaveNow = computed(() => {
@@ -60,8 +73,11 @@ export class Planner {
     return now ? [now, ...windows] : windows;
   });
 
-  protected readonly selectedWindow = computed(() => this.options()[this.selected()]);
+  /** The window chosen in the list; the porkchop plot is centred on it. */
+  protected readonly listWindow = computed(() => this.options()[this.selected()]);
+  protected readonly selectedWindow = computed(() => this.picked() ?? this.listWindow());
   protected readonly heading = computed(() => {
+    if (this.picked()) return 'Selected point';
     const i = this.selected() - (this.leaveNow() ? 1 : 0);
     return i < 0 ? 'Leave now' : i === 0 ? 'Next window' : `Window ${i + 1}`;
   });
@@ -100,12 +116,28 @@ export class Planner {
       this.result.set(result);
       this.resultMission.set(mission);
       this.selected.set(0);
+      this.picked.set(null);
       this.progress.set(null);
     } catch (e) {
       if (isAbort(e)) return; // superseded by a newer search
       this.progress.set(null);
       this.error.set(e instanceof Error ? e.message : String(e));
     }
+  }
+
+  protected selectFromList(index: number) {
+    this.selected.set(index);
+    this.picked.set(null);
+  }
+
+  protected pickFromPlot({ departureTime, timeOfFlight }: PorkchopPick) {
+    const params = toSearchParams(toSearchRequest(this.resultMission()));
+    this.picked.set(describeTransfer(params, departureTime, timeOfFlight));
+  }
+
+  protected showCard() {
+    const reduceMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    (this.card()?.nativeElement as HTMLElement | undefined)?.scrollIntoView?.({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
   }
 
   /** Makes the search shareable (URL) and restorable (local storage). */

@@ -1,0 +1,62 @@
+<div class="porkchop">
+  @if (progress() !== null) {
+    <div class="progress" role="progressbar" aria-label="Calculating the porkchop plot" aria-valuemin="0" aria-valuemax="100"
+         [attr.aria-valuenow]="((progress() ?? 0) * 100).toFixed(0)">
+      <div class="progress-bar" [style.width.%]="(progress() ?? 0) * 100"></div>
+    </div>
+  }
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+
+  <div class="chart">
+    <div class="y-axis" data-testid="y-axis">
+      <span class="axis-title">Flight time</span>
+      @for (t of yTicks(); track t.at) {
+        <span class="tick" [style.bottom.%]="t.at * 100">{{ t.label }}</span>
+      }
+    </div>
+
+    <div class="plot-area" data-testid="plot-area" tabindex="0" role="img" [attr.aria-label]="description()"
+         (pointermove)="onPointerMove($event)" (pointerleave)="cursor.set(null)" (click)="onClick($event)"
+         (focus)="onFocus()" (blur)="cursor.set(null)" (keydown)="onKeydown($event)">
+      <canvas #canvas aria-hidden="true"></canvas>
+
+      @for (m of markers(); track m.x) {
+        <span class="marker" data-testid="window-marker" [class.selected]="m.selected" [style.left.%]="m.x" [style.bottom.%]="m.y"
+              [attr.title]="m.label"></span>
+      }
+
+      @if (hover(); as h) {
+        <span class="crosshair vertical" [style.left.%]="h.x"></span>
+        <span class="crosshair horizontal" [style.bottom.%]="h.y"></span>
+        <div class="tooltip" role="tooltip" [class.right]="h.alignRight" [class.below]="h.alignBelow"
+             [style.left.%]="h.x" [style.bottom.%]="h.y">
+          <strong>{{ h.deltaV }}</strong>
+          <span>Depart {{ h.departure }}</span>
+          <span>Flight {{ h.flight }}</span>
+          <span>Arrive {{ h.arrival }}</span>
+        </div>
+      }
+    </div>
+
+    <div class="x-axis" data-testid="x-axis">
+      @for (t of xTicks(); track t.at) {
+        <span class="tick" [style.left.%]="t.at * 100">{{ t.label }}</span>
+      }
+      <span class="axis-title">Departure</span>
+    </div>
+  </div>
+
+  @if (legend(); as l) {
+    <div class="legend" data-testid="legend">
+      <span class="legend-title">Total Δv</span>
+      <div class="legend-scale">
+        <span class="legend-bar" [style.background]="l.gradient"></span>
+        <span class="legend-labels"><span>{{ l.min }}</span><span>{{ l.mid }}</span><span>{{ l.max }}+</span></span>
+      </div>
+      <span class="legend-impossible"><span class="swatch" [style.background]="l.impossible"></span> No transfer</span>
+    </div>
+  }
+  <p class="hint">{{ cheapEnd() }} is cheaper. Hover to compare, click a point to see that transfer in detail.</p>
+</div>
