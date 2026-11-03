@@ -1,7 +1,7 @@
 import { Component, computed, input, model } from '@angular/core';
 import { calendarOf, nowOf, type Mission } from '../mission';
 import { formatDeltaV } from '../format';
-import { formatDuration, formatShortDate } from '../../astro/game-time';
+import { formatDuration, formatFlightTime, formatShortDate } from '../../astro/game-time';
 import type { TransferWindow } from '../../search/window-finder';
 
 /** The upcoming windows; pick one to see its details. */
@@ -25,7 +25,7 @@ export class WindowList {
       const row = {
         departure: formatShortDate(w.departureTime, calendar),
         wait: w.departureTime - now < 1 ? 'now' : `in ${formatDuration(w.departureTime - now, calendar)}`,
-        flightTime: formatDuration(w.timeOfFlight, calendar),
+        flightTime: formatFlightTime(w.timeOfFlight, calendar),
         deltaV: formatDeltaV(w.deltaV),
         cheapest: i === cheapest,
       };

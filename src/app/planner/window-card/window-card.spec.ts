@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { WindowCard } from './window-card';
 import { sampleResult } from '../../../testing/sample-windows';
 import { DEFAULT_MISSION, type Mission } from '../mission';
-import { formatDate, formatDuration, formatShortDate, KERBIN_CALENDAR } from '../../astro/game-time';
+import { formatDate, formatDuration, formatFlightTime, formatShortDate, KERBIN_CALENDAR } from '../../astro/game-time';
 import { describeBurn, formatAngle, formatDeltaV, formatSignedDeltaV } from '../format';
 import { describePhase } from '../solar-system-diagram/solar-system-layout';
 import type { TransferWindow } from '../../search/window-finder';
@@ -123,9 +123,14 @@ describe('WindowCard', () => {
   it('shows the arrival and the capture burn', async () => {
     const el = await render();
     expect(field(el, 'arrival')).toBe(formatDate(window.arrivalTime, KERBIN_CALENDAR));
-    expect(field(el, 'flight-time')).toBe(formatDuration(window.timeOfFlight, KERBIN_CALENDAR));
+    expect(field(el, 'flight-time')).toBe(formatFlightTime(window.timeOfFlight, KERBIN_CALENDAR));
     expect(field(el, 'capture')).toBe(formatDeltaV(window.transfer.insertionDeltaV));
     expect(el.textContent).toContain('100 km');
+  });
+
+  it('shows flight times longer than a year in days', async () => {
+    const el = await render({ ...window, timeOfFlight: 500 * 6 * 3600 });
+    expect(field(el, 'flight-time')).toBe('500d');
   });
 
   it('says there is no capture burn for a flyby', async () => {

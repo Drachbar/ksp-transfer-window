@@ -76,6 +76,20 @@ describe('MissionForm', () => {
     expect(mission().maxFlightDays).toBeNull();
   });
 
+  describe('game time shortcuts', () => {
+    it('moves the date forward, into the next year when needed', async () => {
+      await render({ ...DEFAULT_MISSION, year: 1, day: 420 });
+      const button = (label: string) => Array.from(el.querySelectorAll('button')).find((b) => b.textContent!.trim() === label)!;
+      button('+10 d').click();
+      await fixture.whenStable();
+      expect(mission()).toMatchObject({ year: 2, day: 4 });
+      button('+1 d').click();
+      button('+100 d').click();
+      await fixture.whenStable();
+      expect(mission()).toMatchObject({ year: 2, day: 105 });
+    });
+  });
+
   it('explains invalid input', async () => {
     await enter(control<HTMLInputElement>('Day'), '500');
     expect(el.textContent).toContain('Day must be between 1 and 426');

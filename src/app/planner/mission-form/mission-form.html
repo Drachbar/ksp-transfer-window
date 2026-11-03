@@ -53,6 +53,11 @@
         <span class="error" id="mission-hour-error">{{ hourError }}</span>
       </div>
     </div>
+    <div class="advance" role="group" aria-label="Move the game time forward">
+      @for (days of [1, 10, 100]; track days) {
+        <button type="button" (click)="advance(days)">+{{ days }} d</button>
+      }
+    </div>
     <div class="calendar" role="radiogroup" aria-label="Calendar">
       <label class="choice"><input type="radio" value="kerbin" [formField]="f.calendar" /> Kerbin time (6 h days)</label>
       <label class="choice"><input type="radio" value="earth" [formField]="f.calendar" /> Earth time (24 h days)</label>

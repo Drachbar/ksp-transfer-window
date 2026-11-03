@@ -4,7 +4,7 @@ import { SolarSystemDiagram } from '../solar-system-diagram/solar-system-diagram
 import { calendarOf, nowOf, type Mission } from '../mission';
 import { describeBurn, formatAngle, formatDeltaV, formatSignedDeltaV } from '../format';
 import { describePhase } from '../solar-system-diagram/solar-system-layout';
-import { formatDate, formatDuration, formatShortDate } from '../../astro/game-time';
+import { formatDate, formatDuration, formatFlightTime, formatShortDate } from '../../astro/game-time';
 import { BODIES } from '../../astro/bodies';
 import type { TransferWindow } from '../../search/window-finder';
 
@@ -41,7 +41,7 @@ export class WindowCard {
       ejectionAngleText: formatAngle(w.transfer.ejectionAngle),
       phaseAngle: formatAngle(w.phaseAngle),
       arrival: formatDate(w.arrivalTime, calendar),
-      flightTime: formatDuration(w.timeOfFlight, calendar),
+      flightTime: formatFlightTime(w.timeOfFlight, calendar),
       capture: m.capture ? formatDeltaV(w.transfer.insertionDeltaV) : 'None (flyby)',
       parent: BODIES[m.origin].orbit!.referenceBody.name,
       refined: w.refined,

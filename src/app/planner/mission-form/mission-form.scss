@@ -112,3 +112,25 @@ select {
 .max-flight {
   margin-top: 0.75rem;
 }
+
+
+.advance {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+
+  button {
+    padding: 0.25rem 0.6rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--accent);
+    }
+  }
+}

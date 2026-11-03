@@ -33,8 +33,25 @@
       <p class="error" role="alert">{{ message }}</p>
     }
 
+    @if (!result() && !error()) {
+      <div class="skeleton" data-testid="skeleton" aria-hidden="true">
+        <div class="bone wide"></div>
+        <div class="bone-row">
+          @for (i of [1, 2, 3, 4]; track i) {
+            <div class="bone tile"></div>
+          }
+        </div>
+        <div class="bone card"></div>
+      </div>
+    }
+
     @if (result(); as r) {
-      <div class="result" [class.stale]="progress() !== null">
+      @if (outOfDate()) {
+        <p class="stale-note" data-testid="stale-note" role="status">
+          These results are for your previous input. Fix the highlighted fields to update them.
+        </p>
+      }
+      <div class="result" [class.stale]="progress() !== null || outOfDate()">
         @if (summary(); as s) {
           <p class="summary" data-testid="summary">
             @switch (s.kind) {

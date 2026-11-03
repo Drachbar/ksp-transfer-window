@@ -1,4 +1,4 @@
-import { EARTH_CALENDAR, formatDate, formatDuration, formatShortDate, fromGameDate, KERBIN_CALENDAR, toGameDate } from './game-time';
+import { addDays, EARTH_CALENDAR, formatDate, formatDuration, formatFlightTime, formatShortDate, fromGameDate, KERBIN_CALENDAR, toGameDate } from './game-time';
 
 const KDAY = 6 * 3600;
 const KYEAR = 426 * KDAY;
@@ -30,9 +30,9 @@ describe('game time', () => {
   });
 
   describe('formatDate', () => {
-    it('formats like KSP', () => {
-      expect(formatDate(236 * KDAY + 3 * 3600 + 12 * 60 + 5, KERBIN_CALENDAR)).toBe('Year 1, Day 237, 3:12:05');
-      expect(formatDate(KYEAR, KERBIN_CALENDAR)).toBe('Year 2, Day 1, 0:00:00');
+    it('formats like KSP, to the minute (windows are days wide; seconds are noise)', () => {
+      expect(formatDate(236 * KDAY + 3 * 3600 + 12 * 60 + 5, KERBIN_CALENDAR)).toBe('Year 1, Day 237, 3:12');
+      expect(formatDate(KYEAR, KERBIN_CALENDAR)).toBe('Year 2, Day 1, 0:00');
     });
   });
 
@@ -58,6 +58,27 @@ describe('game time', () => {
 
     it('uses the calendar for days and years', () => {
       expect(formatDuration(2 * 86400 + 3600, EARTH_CALENDAR)).toBe('2d 1h');
+    });
+  });
+
+  describe('formatFlightTime', () => {
+    it('counts flight times in days, even past a year', () => {
+      expect(formatFlightTime(258 * KDAY + 3 * 3600, KERBIN_CALENDAR)).toBe('258d');
+      expect(formatFlightTime(500 * KDAY, KERBIN_CALENDAR)).toBe('500d');
+      expect(formatFlightTime(KYEAR + 74 * KDAY, KERBIN_CALENDAR)).toBe('500d');
+    });
+
+    it('adds hours to short flights', () => {
+      expect(formatFlightTime(5 * KDAY + 2 * 3600, KERBIN_CALENDAR)).toBe('5d 2h');
+      expect(formatFlightTime(4 * 3600 + 30 * 60, KERBIN_CALENDAR)).toBe('4h 30m');
+    });
+  });
+
+  describe('addDays', () => {
+    it('moves forward through the calendar, rolling over into the next year', () => {
+      expect(addDays({ year: 1, day: 420 }, 10, KERBIN_CALENDAR)).toEqual({ year: 2, day: 4 });
+      expect(addDays({ year: 1, day: 360 }, 10, EARTH_CALENDAR)).toEqual({ year: 2, day: 5 });
+      expect(addDays({ year: 3, day: 1 }, 100, KERBIN_CALENDAR)).toEqual({ year: 3, day: 101 });
     });
   });
 });

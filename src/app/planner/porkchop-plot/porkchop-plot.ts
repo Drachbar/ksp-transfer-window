@@ -2,7 +2,7 @@ import { Component, computed, effect, ElementRef, inject, input, output, signal,
 import { axisTicks, cellAt, deltaVScale, paint, RAMPS, type Cell, type PlotTheme } from './porkchop-scale';
 import { calendarOf, nowOf, toSearchRequest, type Mission } from '../mission';
 import { formatDeltaV } from '../format';
-import { formatDate, formatDuration, toGameDate, type Calendar } from '../../astro/game-time';
+import { formatDate, formatFlightTime, toGameDate, type Calendar } from '../../astro/game-time';
 import { BODIES } from '../../astro/bodies';
 import { synodicPeriod } from '../../search/ranges';
 import { WindowSearch } from '../../search/window-search';
@@ -113,7 +113,7 @@ export class PorkchopPlot {
       alignRight: x > 60,
       alignBelow: y > 70,
       departure: formatDate(c.departureTime, cal),
-      flight: formatDuration(c.timeOfFlight, cal),
+      flight: formatFlightTime(c.timeOfFlight, cal),
       arrival: formatDate(c.departureTime + c.timeOfFlight, cal),
       deltaV: Number.isFinite(c.deltaV) ? `≈ ${formatDeltaV(c.deltaV)}` : 'No transfer possible',
     };
@@ -131,7 +131,7 @@ export class PorkchopPlot {
     return (
       `Porkchop plot of total Δv for departures from ${from} to ${to}. ` +
       `Cheapest: ${formatDeltaV(g.minDeltaV)}, departing ${formatDate(departureTimeAt(g, i), cal)} ` +
-      `with a flight time of ${formatDuration(timeOfFlightAt(g, j), cal)}. Use the arrow keys to explore and Enter to select.`
+      `with a flight time of ${formatFlightTime(timeOfFlightAt(g, j), cal)}. Use the arrow keys to explore and Enter to select.`
     );
   });
 

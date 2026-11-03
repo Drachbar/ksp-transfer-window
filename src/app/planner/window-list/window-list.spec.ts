@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { WindowList } from './window-list';
 import { sampleResult } from '../../../testing/sample-windows';
 import { DEFAULT_MISSION } from '../mission';
-import { formatDuration, formatShortDate, KERBIN_CALENDAR } from '../../astro/game-time';
+import { formatDuration, formatFlightTime, formatShortDate, KERBIN_CALENDAR } from '../../astro/game-time';
 import { formatDeltaV } from '../format';
 
 describe('WindowList', () => {
@@ -26,7 +26,7 @@ describe('WindowList', () => {
       const w = windows[i];
       expect(row.textContent).toContain(formatShortDate(w.departureTime, KERBIN_CALENDAR));
       expect(row.textContent).toContain(formatDuration(w.departureTime, KERBIN_CALENDAR));
-      expect(row.textContent).toContain(formatDuration(w.timeOfFlight, KERBIN_CALENDAR));
+      expect(row.textContent).toContain(formatFlightTime(w.timeOfFlight, KERBIN_CALENDAR));
       expect(row.textContent).toContain(formatDeltaV(w.deltaV));
     });
   });
@@ -41,7 +41,7 @@ describe('WindowList', () => {
     const w = windows[0];
     expect(rows()[0].getAttribute('aria-label')).toBe(
       `${formatShortDate(w.departureTime, KERBIN_CALENDAR)}, in ${formatDuration(w.departureTime, KERBIN_CALENDAR)}, ` +
-        `flight ${formatDuration(w.timeOfFlight, KERBIN_CALENDAR)}, ${formatDeltaV(w.deltaV)}` +
+        `flight ${formatFlightTime(w.timeOfFlight, KERBIN_CALENDAR)}, ${formatDeltaV(w.deltaV)}` +
         (rows()[0].querySelector('.badge') ? ', cheapest' : ''),
     );
   });

@@ -35,17 +35,13 @@
       Warp to <strong data-field="departure">{{ v.departure }}</strong>
       (<span data-field="countdown">{{ v.countdown }}</span>). Then {{ v.alignment }}. Check it in the map view.
     </p>
-    <div class="split wide">
+    <dl class="facts compact">
       <div>
-        <dl class="facts">
-          <div>
-            <dt>Phase angle</dt>
-            <dd data-field="phase-angle">{{ v.phaseAngle }}</dd>
-          </div>
-        </dl>
+        <dt>Phase angle</dt>
+        <dd data-field="phase-angle">{{ v.phaseAngle }}</dd>
       </div>
-      <app-solar-system-diagram [window]="window()" [mission]="m" />
-    </div>
+    </dl>
+    <app-solar-system-diagram [window]="window()" [mission]="m" />
   </section>
 
   <section class="step" aria-labelledby="step-burn">

@@ -216,6 +216,27 @@ describe('Planner', () => {
     expect(el.querySelector('app-window-card')!.textContent).toContain('Next window');
   });
 
+  it('shows the shape of the results while the first search runs', async () => {
+    expect(el.querySelector('[data-testid="skeleton"]')).not.toBeNull();
+    await finishSearch();
+    expect(el.querySelector('[data-testid="skeleton"]')).toBeNull();
+  });
+
+  it('marks the results as out of date while the form is invalid', async () => {
+    await finishSearch();
+    const day = el.querySelector<HTMLInputElement>('#mission-day')!;
+    day.value = '999';
+    day.dispatchEvent(new Event('input'));
+    await settle();
+    expect(el.querySelector('[data-testid="stale-note"]')!.textContent).toMatch(/previous input/i);
+    expect(el.querySelector('.result')!.classList).toContain('stale');
+
+    day.value = '1';
+    day.dispatchEvent(new Event('input'));
+    await settle();
+    expect(el.querySelector('[data-testid="stale-note"]')).toBeNull();
+  });
+
   it('does not search while the mission is invalid', async () => {
     await finishSearch();
     const day = el.querySelector<HTMLInputElement>('#mission-day')!;

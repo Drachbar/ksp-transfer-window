@@ -8,7 +8,7 @@ import { WindowList } from '../window-list/window-list';
 import { PorkchopPlot, type PorkchopPick } from '../porkchop-plot/porkchop-plot';
 import { calendarOf, missionSchema, nowOf, toSearchRequest, type Mission } from '../mission';
 import { formatDeltaV } from '../format';
-import { formatDate, formatDuration } from '../../astro/game-time';
+import { formatDate, formatDuration, formatFlightTime } from '../../astro/game-time';
 import { WindowSearch } from '../../search/window-search';
 import { describeTransfer, type TransferWindow, type WindowSearchResult } from '../../search/window-finder';
 import { toSearchParams } from '../../search/window-search-protocol';
@@ -86,7 +86,7 @@ export class Planner {
     const p = this.picked();
     if (!p) return null;
     const calendar = calendarOf(this.resultMission());
-    return { departure: formatDate(p.departureTime, calendar), flight: formatDuration(p.timeOfFlight, calendar), deltaV: formatDeltaV(p.deltaV) };
+    return { departure: formatDate(p.departureTime, calendar), flight: formatFlightTime(p.timeOfFlight, calendar), deltaV: formatDeltaV(p.deltaV) };
   });
 
   /** Leaving right now, when that is cheaper than waiting for the next window (e.g. a window that is open now). */
@@ -111,6 +111,8 @@ export class Planner {
     const i = this.selected() - (this.leaveNow() ? 1 : 0);
     return i < 0 ? 'Leave now' : i === 0 ? 'Next window' : `Window ${i + 1}`;
   });
+  /** The form no longer describes the results (and cannot, until it is valid again). */
+  protected readonly outOfDate = computed(() => !!this.result() && !this.missionForm().valid());
   protected readonly progressPercent = computed(() => Math.round((this.progress() ?? 0) * 100));
 
   /** "Leaving now costs … Waiting … for the next window saves …" */

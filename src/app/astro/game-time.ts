@@ -48,10 +48,10 @@ export function toGameDate(t: number, calendar: Calendar): GameDate {
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-/** "Year 1, Day 237, 3:12:05" */
+/** "Year 1, Day 237, 3:12" (to the minute: transfer windows are days wide). */
 export function formatDate(t: number, calendar: Calendar): string {
   const d = toGameDate(t, calendar);
-  return `Year ${d.year}, Day ${d.day}, ${d.hour}:${pad(d.minute)}:${pad(d.second)}`;
+  return `Year ${d.year}, Day ${d.day}, ${d.hour}:${pad(d.minute)}`;
 }
 
 /** "Y1 D237 3:12" */
@@ -77,4 +77,16 @@ export function formatDuration(t: number, calendar: Calendar): string {
     .filter(([v], i) => i === 0 || v > 0)
     .map(([v, u]) => `${v}${u}`)
     .join(' ');
+}
+
+/** Flight times in days ("258d", "500d" rather than "1y 74d"); short flights also get hours. */
+export function formatFlightTime(t: number, calendar: Calendar): string {
+  const days = Math.floor(t / secondsPerDay(calendar));
+  return days >= 10 ? `${days}d` : formatDuration(t, calendar);
+}
+
+/** The date `days` days later, rolling over into the next year as needed. */
+export function addDays(date: { year: number; day: number }, days: number, calendar: Calendar): { year: number; day: number } {
+  const total = (date.year - 1) * calendar.daysPerYear + (date.day - 1) + days;
+  return { year: Math.floor(total / calendar.daysPerYear) + 1, day: (total % calendar.daysPerYear) + 1 };
 }
