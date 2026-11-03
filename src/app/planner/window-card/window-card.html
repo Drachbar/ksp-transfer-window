@@ -138,4 +138,34 @@
       </div>
     </dl>
   </section>
+
+  @if (returnTrip(); as trip) {
+    <section class="step" aria-labelledby="step-return">
+      <h3 id="step-return"><span class="step-number">{{ v.planeChange ? 5 : 4 }}</span> Return to {{ m.origin }}</h3>
+      @switch (trip.state) {
+        @case ('searching') {
+          <p class="instruction muted" role="status">Looking for the way home…</p>
+        }
+        @case ('none') {
+          <p class="instruction">No return window found in the next few years. Try a shorter minimum stay.</p>
+        }
+        @case ('found') {
+          @let home = homeView()!;
+          <p class="instruction" data-testid="instruction">
+            The next window home opens <strong>{{ home.departure }}</strong>, {{ home.wait }} after you arrive: <strong>{{ home.deltaV }}</strong>,
+            {{ home.flightTime }} flight, back at {{ m.origin }} {{ home.arrival }}.
+          </p>
+          <div class="return-row">
+            <dl class="facts">
+              <div class="fact-main">
+                <dt>Round trip Δv</dt>
+                <dd data-field="round-trip">{{ home.roundTrip }}</dd>
+              </div>
+            </dl>
+            <button type="button" class="return-button" (click)="showReturn.emit()">Show the return trip</button>
+          </div>
+        }
+      }
+    </section>
+  }
 </article>

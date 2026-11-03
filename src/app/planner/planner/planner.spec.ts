@@ -10,7 +10,7 @@ import { WindowSearch } from '../../search/window-search';
 import type { WindowSearchRequest } from '../../search/window-search-protocol';
 import type { WindowSearchResult } from '../../search/window-finder';
 import { sampleResult } from '../../../testing/sample-windows';
-import { DEFAULT_MISSION, toSearchRequest } from '../mission';
+import { DEFAULT_MISSION, returnMission, toSearchRequest } from '../mission';
 import { formatDate, formatDuration, KERBIN_CALENDAR } from '../../astro/game-time';
 import { formatDeltaV } from '../format';
 
@@ -23,13 +23,16 @@ interface PendingSearch {
 
 class FakeWindowSearch {
   calls: PendingSearch[] = [];
+  /** Searches for the way home (slot 'return'). */
+  returnCalls: PendingSearch[] = [];
   porkchopRequests: unknown[] = [];
   porkchop(request: unknown) {
     this.porkchopRequests.push(request);
     return new Promise<never>(() => {});
   }
-  search(request: WindowSearchRequest, onProgress?: (f: number) => void) {
-    return new Promise<WindowSearchResult>((resolve, reject) => this.calls.push({ request, onProgress, resolve, reject }));
+  search(request: WindowSearchRequest, onProgress?: (f: number) => void, slot = 'windows') {
+    const list = slot === 'return' ? this.returnCalls : this.calls;
+    return new Promise<WindowSearchResult>((resolve, reject) => list.push({ request, onProgress, resolve, reject }));
   }
 }
 
@@ -183,6 +186,57 @@ describe('Planner', () => {
     const list = el.querySelector('app-window-list')!;
     const card = el.querySelector('app-window-card')!;
     expect(list.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  describe('return trip', () => {
+    const home = sampleResult().windows[1]; // stands in for a Duna → Kerbin window
+    const homeResult = { windows: [home], departNow: null };
+
+    it('looks for the way home from the window that is shown', async () => {
+      await finishSearch();
+      expect(search.returnCalls.length).toBe(1);
+      expect(search.returnCalls[0].request).toEqual({ ...toSearchRequest(returnMission(DEFAULT_MISSION, result.windows[0])), windowCount: 3 });
+      expect(el.querySelector('[aria-labelledby="step-return"]')!.textContent).toMatch(/looking for/i);
+    });
+
+    it('shows the next window home in the card', async () => {
+      await finishSearch();
+      search.returnCalls[0].resolve(homeResult);
+      await settle();
+      const step = el.querySelector('[aria-labelledby="step-return"]')!.textContent!;
+      expect(step).toContain('Return to Kerbin');
+      expect(step).toContain(formatDate(home.departureTime, KERBIN_CALENDAR));
+    });
+
+    it('looks again when another window is chosen', async () => {
+      await finishSearch();
+      el.querySelectorAll<HTMLButtonElement>('app-window-list button.window')[2].click();
+      await settle();
+      expect(search.returnCalls.at(-1)!.request.now).toBeGreaterThanOrEqual(result.windows[2].arrivalTime);
+    });
+
+    it('shows the trip home in detail when asked', async () => {
+      await finishSearch();
+      search.returnCalls[0].resolve(homeResult);
+      await settle();
+      Array.from(el.querySelectorAll('button')).find((b) => b.textContent!.includes('Show the return trip'))!.click();
+      await settle();
+      const card = el.querySelector('app-window-card')!;
+      expect(card.querySelector('h2')!.textContent).toContain('Return to Kerbin');
+      expect(card.querySelector('#step-depart')!.textContent).toContain('Depart from Duna');
+      expect(card.querySelector('[data-field="countdown"]')!.textContent).toContain('after you arrive');
+      expect(card.querySelector('[aria-labelledby="step-return"]')).toBeNull();
+    });
+
+    it('does not plan a way home for a flyby', async () => {
+      const capture = el.querySelector<HTMLInputElement>('#mission-capture')!;
+      capture.click();
+      await settle();
+      search.calls.at(-1)!.resolve(result);
+      await settle();
+      expect(search.returnCalls.length).toBe(0);
+      expect(el.querySelector('[aria-labelledby="step-return"]')).toBeNull();
+    });
   });
 
   it('shows the window picked in the list', async () => {

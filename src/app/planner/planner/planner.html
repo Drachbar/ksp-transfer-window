@@ -80,7 +80,8 @@
         }
 
         @if (selectedWindow(); as w) {
-          <app-window-card #card [window]="w" [mission]="resultMission()" [heading]="heading()" (showAlternative)="showPlaneChange($event)" />
+          <app-window-card #card [window]="w" [mission]="cardMission()" [heading]="heading()" [returnTrip]="cardReturnTrip()" [countdownFrom]="cardCountdownFrom()"
+                           (showAlternative)="showPlaneChange($event)" (showReturn)="showReturnTrip()" />
         } @else {
           <p class="empty">No transfer windows found for this route.</p>
         }

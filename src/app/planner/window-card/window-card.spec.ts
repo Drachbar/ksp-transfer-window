@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { WindowCard } from './window-card';
+import { WindowCard, type ReturnTrip } from './window-card';
 import { sampleResult } from '../../../testing/sample-windows';
-import { DEFAULT_MISSION, type Mission } from '../mission';
+import { DEFAULT_MISSION, returnMission, type Mission } from '../mission';
 import { formatDate, formatDuration, formatFlightTime, formatShortDate, KERBIN_CALENDAR } from '../../astro/game-time';
 import { describeBurn, formatAngle, formatDeltaV, formatSignedDeltaV } from '../format';
 import { describePhase } from '../solar-system-diagram/solar-system-layout';
@@ -77,6 +77,17 @@ describe('WindowCard', () => {
     const el = await render();
     expect(field(el, 'departure')).toBe(formatDate(window.departureTime, KERBIN_CALENDAR));
     expect(field(el, 'countdown')).toBe(`in ${formatDuration(window.departureTime, KERBIN_CALENDAR)}`);
+  });
+
+  it('can count down from something other than now (e.g. your arrival, for the trip home)', async () => {
+    fixture = TestBed.createComponent(WindowCard);
+    fixture.componentRef.setInput('window', window);
+    fixture.componentRef.setInput('mission', DEFAULT_MISSION);
+    fixture.componentRef.setInput('heading', 'Return to Kerbin');
+    fixture.componentRef.setInput('countdownFrom', 'after you arrive');
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(field(el, 'countdown')).toBe(`${formatDuration(window.departureTime, KERBIN_CALENDAR)} after you arrive`);
   });
 
   it('says "now" when the departure is the current time', async () => {
@@ -177,6 +188,48 @@ describe('WindowCard', () => {
 
     it('has no plane change step for a ballistic transfer', async () => {
       expect((await render()).querySelector('[aria-labelledby="step-plane-change"]')).toBeNull();
+    });
+  });
+
+  describe('return trip', () => {
+    const home = sampleResult().windows[1]; // stands in for a Duna → Kerbin window
+    const found: ReturnTrip = { state: 'found', window: home, mission: returnMission(DEFAULT_MISSION, window) };
+    const renderWith = async (trip: ReturnTrip | null) => {
+      await render();
+      fixture.componentRef.setInput('returnTrip', trip);
+      await fixture.whenStable();
+      return fixture.nativeElement as HTMLElement;
+    };
+    const step = (el: HTMLElement) => el.querySelector('[aria-labelledby="step-return"]');
+
+    it('has no return step when there is nothing to return from', async () => {
+      expect(step(await renderWith(null))).toBeNull();
+    });
+
+    it('says it is looking for the way home', async () => {
+      expect(step(await renderWith({ state: 'searching' }))!.textContent).toMatch(/looking for/i);
+    });
+
+    it('shows the next window home and how long you wait for it', async () => {
+      const el = await renderWith(found);
+      const text = step(el)!.textContent!.replace(/\s+/g, ' ');
+      expect(text).toContain('Return to Kerbin');
+      expect(text).toContain(formatDate(home.departureTime, KERBIN_CALENDAR));
+      expect(text).toContain(`${formatDuration(home.departureTime - window.arrivalTime, KERBIN_CALENDAR)} after you arrive`);
+      expect(text).toContain(formatDeltaV(home.deltaV));
+      expect(field(el, 'round-trip')).toBe(formatDeltaV(window.deltaV + home.deltaV));
+    });
+
+    it('offers to show the return trip in detail', async () => {
+      const el = await renderWith(found);
+      let shown = 0;
+      fixture.componentInstance.showReturn.subscribe(() => shown++);
+      Array.from(step(el)!.querySelectorAll('button')).find((b) => b.textContent!.includes('Show the return trip'))!.click();
+      expect(shown).toBe(1);
+    });
+
+    it('says so when there is no window home', async () => {
+      expect(step(await renderWith({ state: 'none' }))!.textContent).toMatch(/no return window/i);
     });
   });
 

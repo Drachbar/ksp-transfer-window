@@ -98,5 +98,13 @@
       <span class="hint" id="mission-max-flight-hint">Leave empty for no limit. Faster trips cost more Δv.</span>
       <span class="error" id="mission-max-flight-error">{{ maxError }}</span>
     </div>
+    @let stayError = error(f.stayDays);
+    <div class="field max-flight">
+      <label for="mission-stay">Minimum stay at {{ f.destination().value() }} (days)</label>
+      <input id="mission-stay" type="number" inputmode="numeric" placeholder="Fly home as soon as possible" [formField]="f.stayDays"
+             [attr.aria-invalid]="!!stayError" aria-describedby="mission-stay-error mission-stay-hint" />
+      <span class="hint" id="mission-stay-hint">Used to find your way home.</span>
+      <span class="error" id="mission-stay-error">{{ stayError }}</span>
+    </div>
   </fieldset>
 </form>

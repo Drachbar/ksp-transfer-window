@@ -90,6 +90,21 @@ describe('MissionForm', () => {
     });
   });
 
+  it('takes an optional minimum stay at the destination', async () => {
+    const stay = control<HTMLInputElement>('Minimum stay');
+    expect(stay.value).toBe('');
+    await enter(stay, '30');
+    expect(mission().stayDays).toBe(30);
+    await enter(stay, '');
+    expect(mission().stayDays).toBeNull();
+  });
+
+  it('does not ask how long you stay on a flyby', async () => {
+    control<HTMLInputElement>('Capture').click();
+    await fixture.whenStable();
+    expect(control<HTMLInputElement>('Minimum stay').disabled).toBe(true);
+  });
+
   it('explains invalid input', async () => {
     await enter(control<HTMLInputElement>('Day'), '500');
     expect(el.textContent).toContain('Day must be between 1 and 426');

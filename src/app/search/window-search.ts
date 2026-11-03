@@ -16,30 +16,32 @@ export const WINDOW_SEARCH_WORKER = new InjectionToken<(() => Worker) | null>('W
     typeof Worker !== 'undefined' ? () => new Worker(new URL('./window-finder.worker', import.meta.url), { type: 'module' }) : null,
 });
 
-type Kind = WorkerRequest['kind'];
+/** Requests in the same slot cancel each other; different slots run side by side. */
+type Slot = string;
 type Progress = (fraction: number) => void;
 
 /**
  * Runs transfer window searches and porkchop grids off the main thread, each in its own worker.
- * Starting a new request cancels the running one of the same kind (it rejects with an AbortError).
+ * Starting a new request cancels the running one in the same slot (it rejects with an AbortError).
  */
 @Service()
 export class WindowSearch {
   private readonly createWorker = inject(WINDOW_SEARCH_WORKER);
   private nextId = 1;
-  private readonly cancelRunning = new Map<Kind, () => void>();
+  private readonly cancelRunning = new Map<Slot, () => void>();
 
-  search(request: WindowSearchRequest, onProgress?: Progress): Promise<WindowSearchResult> {
-    return this.run({ id: this.nextId++, kind: 'windows', request }, onProgress) as Promise<WindowSearchResult>;
+  /** Finds transfer windows. Use a separate `slot` for searches that should not cancel the main one. */
+  search(request: WindowSearchRequest, onProgress?: Progress, slot: Slot = 'windows'): Promise<WindowSearchResult> {
+    return this.run({ id: this.nextId++, kind: 'windows', request }, slot, onProgress) as Promise<WindowSearchResult>;
   }
 
   porkchop(request: PorkchopRequest, onProgress?: Progress): Promise<PorkchopResult> {
-    return this.run({ id: this.nextId++, kind: 'porkchop', request }, onProgress) as Promise<PorkchopResult>;
+    return this.run({ id: this.nextId++, kind: 'porkchop', request }, 'porkchop', onProgress) as Promise<PorkchopResult>;
   }
 
-  private run(message: WorkerRequest, onProgress?: Progress): Promise<WindowSearchResult | PorkchopResult> {
-    const { id, kind } = message;
-    this.cancelRunning.get(kind)?.();
+  private run(message: WorkerRequest, slot: Slot, onProgress?: Progress): Promise<WindowSearchResult | PorkchopResult> {
+    const { id } = message;
+    this.cancelRunning.get(slot)?.();
 
     return new Promise((resolve, reject) => {
       let finish = () => {};
@@ -49,9 +51,9 @@ export class WindowSearch {
       };
       const done = () => {
         finish();
-        if (this.cancelRunning.get(kind) === cancel) this.cancelRunning.delete(kind);
+        if (this.cancelRunning.get(slot) === cancel) this.cancelRunning.delete(slot);
       };
-      this.cancelRunning.set(kind, cancel);
+      this.cancelRunning.set(slot, cancel);
 
       const handle = (response: WorkerResponse) => {
         if (response.id !== id) return;

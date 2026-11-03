@@ -87,6 +87,16 @@ describe('WindowSearch', () => {
       await expect(second).resolves.toBeTruthy();
     });
 
+    it('runs searches in separate slots side by side, cancelling only within a slot', async () => {
+      const home = { ...request, origin: 'Duna' as const, destination: 'Kerbin' as const };
+      const main = service.search(request);
+      const firstReturn = service.search(home, undefined, 'return');
+      const secondReturn = service.search(home, undefined, 'return');
+      await expect(main).resolves.toBeTruthy();
+      await expect(firstReturn).rejects.toMatchObject({ name: 'AbortError' });
+      await expect(secondReturn).resolves.toBeTruthy();
+    });
+
     it('rejects when the search fails', async () => {
       await expect(service.search({ ...request, destination: 'Laythe' })).rejects.toThrow(/same/i);
     });

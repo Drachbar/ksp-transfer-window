@@ -1,7 +1,8 @@
 // What the user is planning, as entered in the form.
 
 import { BODIES, bodiesOrbiting, type BodyName, type CelestialBody } from '../astro/bodies';
-import { EARTH_CALENDAR, fromGameDate, KERBIN_CALENDAR, type Calendar } from '../astro/game-time';
+import { EARTH_CALENDAR, fromGameDate, KERBIN_CALENDAR, toGameDate, type Calendar } from '../astro/game-time';
+import type { TransferWindow } from '../search/window-finder';
 import { disabled, schema, validate, type SchemaPath } from '@angular/forms/signals';
 import type { WindowSearchRequest } from '../search/window-search-protocol';
 
@@ -23,6 +24,8 @@ export interface Mission {
   calendar: CalendarName;
   /** Longest acceptable flight time in days of the selected calendar; null = no limit. */
   maxFlightDays: number | null;
+  /** Shortest stay at the destination before flying home, in days; null = leave as soon as possible. */
+  stayDays: number | null;
 }
 
 export const DEFAULT_MISSION: Mission = {
@@ -36,6 +39,7 @@ export const DEFAULT_MISSION: Mission = {
   capture: true,
   calendar: 'kerbin',
   maxFlightDays: null,
+  stayDays: null,
 };
 
 export const WINDOW_COUNT = 5;
@@ -100,6 +104,29 @@ function between(path: SchemaPath<number>, label: string, min: number, max: (cal
   });
 }
 
+/**
+ * The trip home after flying `outbound`: from the destination back to the origin, leaving
+ * from the orbit you captured into, no earlier than arrival plus the minimum stay.
+ */
+export function returnMission(m: Mission, outbound: TransferWindow): Mission {
+  const calendar = calendarOf(m);
+  const earliest = outbound.arrivalTime + (m.stayDays ?? 0) * calendar.hoursPerDay * 3600;
+  // The form works in whole hours; round up so the search never starts before you are there.
+  const start = toGameDate(Math.ceil(earliest / 3600) * 3600, calendar);
+  return {
+    ...m,
+    origin: m.destination,
+    destination: m.origin,
+    year: start.year,
+    day: start.day,
+    hour: start.hour,
+    initialAltitudeKm: m.finalAltitudeKm,
+    finalAltitudeKm: m.initialAltitudeKm,
+    capture: true,
+    stayDays: null,
+  };
+}
+
 export const missionSchema = schema<Mission>((p) => {
   between(p.year, 'Year', 1, () => Infinity, p.calendar);
   between(p.day, 'Day', 1, (c) => c.daysPerYear, p.calendar);
@@ -107,6 +134,11 @@ export const missionSchema = schema<Mission>((p) => {
   between(p.initialAltitudeKm, 'Altitude', 0, () => Infinity, p.calendar);
   between(p.finalAltitudeKm, 'Altitude', 0, () => Infinity, p.calendar);
   disabled(p.finalAltitudeKm, ({ valueOf }) => !valueOf(p.capture));
+  disabled(p.stayDays, ({ valueOf }) => !valueOf(p.capture));
+  validate(p.stayDays, ({ value }) => {
+    const v = value();
+    return v === null || (Number.isFinite(v) && v >= 0) ? undefined : { kind: 'range', message: 'Stay must be 0 days or more' };
+  });
   validate(p.maxFlightDays, ({ value }) => {
     const v = value();
     return v === null || (Number.isFinite(v) && v > 0) ? undefined : { kind: 'range', message: 'Max flight time must be more than 0 days' };

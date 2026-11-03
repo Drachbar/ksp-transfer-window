@@ -3,10 +3,10 @@ import { form } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { loadStoredMission, MISSION_STORAGE, missionFromQueryParams, missionToQueryParams, restoreMission, storeMission } from '../mission-state';
 import { MissionForm } from '../mission-form/mission-form';
-import { WindowCard } from '../window-card/window-card';
+import { WindowCard, type ReturnTrip } from '../window-card/window-card';
 import { WindowList } from '../window-list/window-list';
 import { PorkchopPlot, type PorkchopPick } from '../porkchop-plot/porkchop-plot';
-import { calendarOf, missionSchema, nowOf, toSearchRequest, type Mission } from '../mission';
+import { calendarOf, missionSchema, nowOf, returnMission, toSearchRequest, type Mission } from '../mission';
 import { formatDeltaV } from '../format';
 import { formatDate, formatDuration, formatFlightTime } from '../../astro/game-time';
 import { WindowSearch } from '../../search/window-search';
@@ -29,6 +29,9 @@ export const NARROW_SCREEN = new InjectionToken<Signal<boolean>>('NARROW_SCREEN'
     return narrow.asReadonly();
   },
 });
+
+/** How many windows home to look for. */
+const RETURN_WINDOW_COUNT = 3;
 
 const isAbort = (e: unknown) => e instanceof DOMException && e.name === 'AbortError';
 
@@ -64,8 +67,18 @@ export class Planner {
   private searchedOnce = false;
   /** A transfer picked in the porkchop plot; shown instead of the selected window. */
   protected readonly picked = signal<TransferWindow | null>(null);
-  /** What the picked transfer is: a point from the plot or a suggested plane change. */
+  /** What the picked transfer is: a point from the plot, a suggested plane change or the trip home. */
   private readonly pickedLabel = signal('Selected point');
+  /** The mission the picked transfer belongs to when it is not the searched one (the trip home). */
+  private readonly pickedMission = signal<Mission | null>(null);
+  /** The way home from the window that is shown. */
+  private readonly returnTrip = signal<ReturnTrip | null>(null);
+
+  protected readonly cardMission = computed(() => this.pickedMission() ?? this.resultMission());
+  /** The trip home waits from your arrival, not from today. */
+  protected readonly cardCountdownFrom = computed(() => (this.pickedMission() ? 'after you arrive' : null));
+  /** No "return" step on the trip home itself. */
+  protected readonly cardReturnTrip = computed(() => (this.pickedMission() ? null : this.returnTrip()));
   protected readonly showPlot = signal(false);
 
   protected readonly narrow = inject(NARROW_SCREEN);
@@ -140,6 +153,33 @@ export class Planner {
       const timer = setTimeout(() => this.search(mission), delay);
       onCleanup(() => clearTimeout(timer));
     });
+
+    // Look for the way home from the window that is shown.
+    effect((onCleanup) => {
+      const outbound = this.pickedMission() ? null : this.selectedWindow();
+      const mission = this.resultMission();
+      if (!outbound || !mission.capture) {
+        this.returnTrip.set(null);
+        return;
+      }
+      let stale = false;
+      onCleanup(() => (stale = true));
+      const home = returnMission(mission, outbound);
+      this.returnTrip.set({ state: 'searching' });
+      this.windowSearch
+        .search({ ...toSearchRequest(home), windowCount: RETURN_WINDOW_COUNT }, undefined, 'return')
+        .then((r) => {
+          if (stale) return;
+          // Leaving straight away beats the first window when it is cheaper (a window is open on arrival).
+          const now = r.departNow;
+          const next = r.windows[0];
+          const best = now && (!next || now.deltaV < next.deltaV) ? now : next;
+          this.returnTrip.set(best ? { state: 'found', window: best, mission: home } : { state: 'none' });
+        })
+        .catch((e) => {
+          if (!stale && !isAbort(e)) this.returnTrip.set({ state: 'none' });
+        });
+    });
   }
 
   private async search(mission: Mission) {
@@ -152,6 +192,7 @@ export class Planner {
       this.resultMission.set(mission);
       this.selected.set(0);
       this.picked.set(null);
+      this.pickedMission.set(null);
       this.progress.set(null);
     } catch (e) {
       if (isAbort(e)) return; // superseded by a newer search
@@ -163,17 +204,28 @@ export class Planner {
   protected selectFromList(index: number) {
     this.selected.set(index);
     this.picked.set(null);
+    this.pickedMission.set(null);
   }
 
   protected pickFromPlot({ departureTime, timeOfFlight }: PorkchopPick) {
     const params = toSearchParams(toSearchRequest(this.resultMission()));
     this.pickedLabel.set('Selected point');
+    this.pickedMission.set(null);
     this.picked.set(describeTransfer(params, departureTime, timeOfFlight));
   }
 
   protected showPlaneChange(alternative: TransferWindow) {
     this.pickedLabel.set('With mid-course plane change');
+    this.pickedMission.set(null);
     this.picked.set(alternative);
+  }
+
+  protected showReturnTrip() {
+    const trip = this.returnTrip();
+    if (trip?.state !== 'found') return;
+    this.pickedLabel.set(`Return to ${trip.mission.destination}`);
+    this.pickedMission.set(trip.mission);
+    this.picked.set(trip.window);
   }
 
   protected showCard() {

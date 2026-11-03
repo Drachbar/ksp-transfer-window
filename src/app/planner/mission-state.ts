@@ -40,6 +40,9 @@ function sanitize(raw: Record<string, unknown>): Partial<Mission> {
   if (raw['maxFlightDays'] === null || (isFiniteNumber(raw['maxFlightDays']) && raw['maxFlightDays'] > 0)) {
     m.maxFlightDays = raw['maxFlightDays'] as number | null;
   }
+  if (raw['stayDays'] === null || (isFiniteNumber(raw['stayDays']) && raw['stayDays'] >= 0)) {
+    m.stayDays = raw['stayDays'] as number | null;
+  }
   return m;
 }
 
@@ -54,6 +57,7 @@ export function missionToQueryParams(m: Mission): Record<string, string> {
     capture: m.capture ? String(m.finalAltitudeKm) : 'none',
     calendar: m.calendar,
     ...(m.maxFlightDays !== null ? { maxflight: String(m.maxFlightDays) } : {}),
+    ...(m.stayDays !== null ? { stay: String(m.stayDays) } : {}),
   };
 }
 
@@ -72,6 +76,7 @@ export function missionFromQueryParams(get: (key: string) => string | null): Par
     calendar: get('calendar'),
     // A complete search (as written by missionToQueryParams) without a limit means "no limit".
     maxFlightDays: get('maxflight') === null ? (isBody(get('from')) ? null : undefined) : parseNumber(get('maxflight')),
+    stayDays: get('stay') === null ? (isBody(get('from')) ? null : undefined) : parseNumber(get('stay')),
   });
 }
 

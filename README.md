@@ -19,6 +19,8 @@ Live at **<https://ksp.findersson.se>** and **<https://drachbar.github.io/ksp-tr
   alignment against the map view in the game.
 - **Mid-course plane change suggestions** when they save more than 10 %, e.g.
   for some Dres and Eeloo windows.
+- **The trip home**: the next window back after you arrive (optionally after a
+  minimum stay), with the round-trip Δv and the full burn details for the return.
 - **Porkchop plot** of every departure date and flight time around a window;
   click any point to see that transfer in detail.
 - Kerbin or Earth calendar, optional maximum flight time, flybys without a

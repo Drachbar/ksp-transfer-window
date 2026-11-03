@@ -8,6 +8,9 @@ import { formatDate, formatDuration, formatFlightTime, formatShortDate } from '.
 import { BODIES } from '../../astro/bodies';
 import type { TransferWindow } from '../../search/window-finder';
 
+/** The way home from this window: still searching, found (with the mission for the trip home), or none. */
+export type ReturnTrip = { state: 'searching' } | { state: 'none' } | { state: 'found'; window: TransferWindow; mission: Mission };
+
 /** Everything you need to fly one transfer window. */
 @Component({
   selector: 'app-window-card',
@@ -19,8 +22,29 @@ export class WindowCard {
   readonly window = input.required<TransferWindow>();
   readonly mission = input.required<Mission>();
   readonly heading = input.required<string>();
+  /** What the countdown is relative to; by default the current game time ("in 236d"). */
+  readonly countdownFrom = input<string | null>(null);
   /** Asks to show the suggested plane-change transfer instead. */
   readonly showAlternative = output<TransferWindow>();
+  /** The trip home after this window; null when there is none to plan (e.g. a flyby). */
+  readonly returnTrip = input<ReturnTrip | null>(null);
+  /** Asks to show the return trip in detail. */
+  readonly showReturn = output<void>();
+
+  protected readonly homeView = computed(() => {
+    const trip = this.returnTrip();
+    if (trip?.state !== 'found') return null;
+    const calendar = calendarOf(this.mission());
+    const home = trip.window;
+    return {
+      departure: formatDate(home.departureTime, calendar),
+      wait: formatDuration(home.departureTime - this.window().arrivalTime, calendar),
+      deltaV: formatDeltaV(home.deltaV),
+      flightTime: formatFlightTime(home.timeOfFlight, calendar),
+      arrival: formatDate(home.arrivalTime, calendar),
+      roundTrip: formatDeltaV(this.window().deltaV + home.deltaV),
+    };
+  });
 
   protected readonly view = computed(() => {
     const w = this.window();
@@ -32,7 +56,7 @@ export class WindowCard {
       departureShort: formatShortDate(w.departureTime, calendar),
       alignment: describePhase(m.destination, m.origin, w.phaseAngle),
       burn: describeBurn(w.details.ejectionProgradeDeltaV, w.details.ejectionNormalDeltaV),
-      countdown: wait < 1 ? 'now' : `in ${formatDuration(wait, calendar)}`,
+      countdown: wait < 1 ? 'now' : this.countdownFrom() ? `${formatDuration(wait, calendar)} ${this.countdownFrom()}` : `in ${formatDuration(wait, calendar)}`,
       total: formatDeltaV(w.deltaV),
       ejection: formatDeltaV(w.transfer.ejectionDeltaV),
       prograde: formatSignedDeltaV(w.details.ejectionProgradeDeltaV),

@@ -14,6 +14,7 @@ const custom: Mission = {
   capture: true,
   calendar: 'earth',
   maxFlightDays: 400,
+  stayDays: 20,
 };
 
 describe('query parameters', () => {
@@ -40,6 +41,11 @@ describe('query parameters', () => {
     expect(restoreMission(shared, { maxFlightDays: 300 }).maxFlightDays).toBeNull();
     // A link with only some parameters leaves the rest to the last visit.
     expect(restoreMission(missionFromQueryParams(params({ to: 'Eve' })), { maxFlightDays: 300 }).maxFlightDays).toBe(300);
+  });
+
+  it('writes the minimum stay only when there is one', () => {
+    expect(missionToQueryParams(custom)['stay']).toBe('20');
+    expect('stay' in missionToQueryParams(DEFAULT_MISSION)).toBe(false);
   });
 
   it('writes "none" for a flyby', () => {
