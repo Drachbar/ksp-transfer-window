@@ -1,4 +1,5 @@
-import { Component, computed, DestroyRef, effect, ElementRef, inject, InjectionToken, signal, untracked, viewChild, type Signal } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, InjectionToken, signal, untracked, viewChild } from '@angular/core';
+import { NARROW_SCREEN } from '../../narrow-screen';
 import { form } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { loadStoredMission, MISSION_STORAGE, missionFromQueryParams, missionToQueryParams, restoreMission, storeMission } from '../mission-state';
@@ -20,19 +21,6 @@ import { toSearchParams } from '../../search/window-search-protocol';
 /** How long to wait after the last change before searching (ms). */
 export const SEARCH_DEBOUNCE_MS = new InjectionToken<number>('SEARCH_DEBOUNCE_MS', { providedIn: 'root', factory: () => 300 });
 
-/** True on screens too narrow for the form and the results side by side. */
-export const NARROW_SCREEN = new InjectionToken<Signal<boolean>>('NARROW_SCREEN', {
-  providedIn: 'root',
-  factory: () => {
-    if (typeof matchMedia !== 'function') return signal(false);
-    const query = matchMedia('(max-width: 959px)');
-    const narrow = signal(query.matches);
-    const update = () => narrow.set(query.matches);
-    query.addEventListener?.('change', update);
-    inject(DestroyRef).onDestroy(() => query.removeEventListener?.('change', update));
-    return narrow.asReadonly();
-  },
-});
 
 /** How many windows home to look for. */
 const RETURN_WINDOW_COUNT = 3;

@@ -1,72 +1,86 @@
 @let f = planForm;
 <div class="layout">
   <section class="panel" aria-labelledby="plan-heading">
-    <h2 id="plan-heading" class="panel-title">Satellite network</h2>
-    <form class="plan" (submit)="$event.preventDefault()" novalidate>
-      <div class="field">
-        <label for="plan-body">Around</label>
-        <select id="plan-body" [formField]="f.body">
-          @for (b of bodies; track b) {
-            <option [value]="b">{{ b }}</option>
-          }
-        </select>
-      </div>
-
-      <fieldset>
-        <legend>Orbit</legend>
-        <label class="choice"><input type="radio" value="stationary" [formField]="f.orbit" /> {{ stationaryName() }} (stays over one spot)</label>
-        <label class="choice"><input type="radio" value="custom" [formField]="f.orbit" /> Custom altitude</label>
-        @let altitudeError = error(f.altitudeKm);
-        <label class="sr-only" for="plan-altitude">Custom altitude (km)</label>
-        <div class="with-unit">
-          <input id="plan-altitude" type="number" inputmode="decimal" [formField]="f.altitudeKm" [attr.aria-invalid]="!!altitudeError" />
-          <span class="unit" aria-hidden="true">km</span>
-        </div>
-        <span class="error">{{ altitudeError }}</span>
-        <span class="hint">Any evenly spaced circular orbit works for CommNet; stationary orbits matter mainly for contracts.</span>
-      </fieldset>
-
-      <div class="row">
-        @let countError = error(f.count);
+    <div class="panel-header">
+      <h2 id="plan-heading" class="panel-title">Satellite network</h2>
+      @if (narrow() && result()) {
+        <button type="button" class="link-button" [attr.aria-expanded]="formOpen()" aria-controls="plan-form" (click)="editing.set(!editing())">
+          {{ editing() ? 'Done' : 'Edit' }}
+        </button>
+      }
+    </div>
+    @if (formOpen()) {
+      <form id="plan-form" class="plan" (submit)="$event.preventDefault()" novalidate>
         <div class="field">
-          <label for="plan-count">Satellites</label>
-          <input id="plan-count" type="number" inputmode="numeric" step="1" [formField]="f.count" [attr.aria-invalid]="!!countError" />
-          <span class="error">{{ countError }}</span>
-        </div>
-        @let parkingError = error(f.parkingAltitudeKm);
-        <div class="field">
-          <label for="plan-parking">Carrier’s parking orbit (km)</label>
-          <input id="plan-parking" type="number" inputmode="decimal" [formField]="f.parkingAltitudeKm" [attr.aria-invalid]="!!parkingError" />
-          <span class="error">{{ parkingError }}</span>
-        </div>
-      </div>
-
-      <fieldset>
-        <legend>Deploy from</legend>
-        <label class="choice"><input type="radio" value="below" [formField]="f.deployFrom" /> Below (release at apoapsis)</label>
-        <label class="choice"><input type="radio" value="above" [formField]="f.deployFrom" /> Above (release at periapsis)</label>
-      </fieldset>
-
-      <fieldset>
-        <legend>Comms</legend>
-        <div class="field">
-          <label for="plan-antenna">Relay antenna on each satellite</label>
-          <select id="plan-antenna" [formField]="f.antenna">
-            @for (a of antennas; track a.name) {
-              <option [value]="a.name">{{ a.name }}</option>
+          <label for="plan-body">Around</label>
+          <select id="plan-body" [formField]="f.body">
+            @for (b of bodies; track b) {
+              <option [value]="b">{{ b }}</option>
             }
           </select>
         </div>
-        <div class="field">
-          <label for="plan-dsn">Tracking Station</label>
-          <select #dsnSelect id="plan-dsn" (change)="setDsnLevel(dsnSelect.value)">
-            @for (l of dsnLevels; track l.name; let i = $index) {
-              <option [value]="i" [selected]="i === plan().dsnLevel">{{ l.name }}</option>
-            }
-          </select>
+
+        <fieldset>
+          <legend>Orbit</legend>
+          <label class="choice"><input type="radio" value="stationary" [formField]="f.orbit" /> {{ stationaryName() }} (stays over one spot)</label>
+          <label class="choice"><input type="radio" value="custom" [formField]="f.orbit" /> Custom altitude</label>
+          @let altitudeError = error(f.altitudeKm);
+          <label class="sr-only" for="plan-altitude">Custom altitude (km)</label>
+          <div class="with-unit">
+            <input id="plan-altitude" type="number" inputmode="decimal" [formField]="f.altitudeKm" [attr.aria-invalid]="!!altitudeError" />
+            <span class="unit" aria-hidden="true">km</span>
+          </div>
+          <span class="error">{{ altitudeError }}</span>
+          <span class="hint">Any evenly spaced circular orbit works for CommNet; stationary orbits matter mainly for contracts.</span>
+        </fieldset>
+
+        <div class="row">
+          @let countError = error(f.count);
+          <div class="field">
+            <label for="plan-count">Satellites</label>
+            <input id="plan-count" type="number" inputmode="numeric" step="1" [formField]="f.count" [attr.aria-invalid]="!!countError" />
+            <span class="error">{{ countError }}</span>
+          </div>
+          @let parkingError = error(f.parkingAltitudeKm);
+          <div class="field">
+            <label for="plan-parking">Carrier’s parking orbit (km)</label>
+            <input id="plan-parking" type="number" inputmode="decimal" [formField]="f.parkingAltitudeKm" [attr.aria-invalid]="!!parkingError" />
+            <span class="error">{{ parkingError }}</span>
+          </div>
         </div>
-      </fieldset>
-    </form>
+
+        <fieldset>
+          <legend>Deploy from</legend>
+          <label class="choice"><input type="radio" value="below" [formField]="f.deployFrom" /> Below (release at apoapsis)</label>
+          <label class="choice"><input type="radio" value="above" [formField]="f.deployFrom" /> Above (release at periapsis)</label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Comms</legend>
+          <div class="field">
+            <label for="plan-antenna">Relay antenna on each satellite</label>
+            <select id="plan-antenna" [formField]="f.antenna">
+              @for (a of antennas; track a.name) {
+                <option [value]="a.name">{{ a.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label for="plan-dsn">Tracking Station</label>
+            <select #dsnSelect id="plan-dsn" (change)="setDsnLevel(dsnSelect.value)">
+              @for (l of dsnLevels; track l.name; let i = $index) {
+                <option [value]="i" [selected]="i === plan().dsnLevel">{{ l.name }}</option>
+              }
+            </select>
+          </div>
+        </fieldset>
+      </form>
+    } @else {
+      <p class="form-summary" data-testid="plan-form-summary">
+        <strong>{{ formSummary().title }}</strong>
+        <span>{{ formSummary().details }}</span>
+      </p>
+    }
   </section>
 
   <section class="results" aria-labelledby="result-heading">
@@ -104,19 +118,22 @@
           <div>
             <h3>How to deploy them</h3>
             <ol class="steps" data-testid="steps">
-              @for (s of v.steps; track $index) {
-                <li>{{ s }}</li>
+              @for (s of v.steps; track s.title; let i = $index) {
+                <li class="step">
+                  <h4><span class="step-number" aria-hidden="true">{{ i + 1 }}</span> {{ s.title }}</h4>
+                  <dl class="step-data">
+                    @for (d of s.data; track d.label) {
+                      <div>
+                        <dt>{{ d.label }}</dt>
+                        <dd>{{ d.value }}</dd>
+                      </div>
+                    }
+                  </dl>
+                  <p class="explain">{{ s.explain }}</p>
+                </li>
               }
             </ol>
             <dl class="facts">
-              <div>
-                <dt>Deployment orbit</dt>
-                <dd>{{ v.deployment.periapsis }} × {{ v.deployment.apoapsis }}</dd>
-              </div>
-              <div>
-                <dt>Its period</dt>
-                <dd>{{ v.deployment.period }}</dd>
-              </div>
               <div>
                 <dt>Between satellites</dt>
                 <dd>{{ v.spacing }}</dd>

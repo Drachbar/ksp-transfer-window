@@ -1,17 +1,21 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { signal } from '@angular/core';
 import { SatellitesPage } from './satellites-page';
+import { NARROW_SCREEN } from '../../narrow-screen';
 import { evaluatePlan, DEFAULT_PLAN } from '../plan';
 import { formatDeltaV, formatDistance } from '../../planner/format';
-import { BODY_NAMES } from '../../astro/bodies';
+import { BODIES, BODY_NAMES } from '../../astro/bodies';
 
 describe('SatellitesPage', () => {
   let harness: RouterTestingHarness;
   let el: HTMLElement;
 
-  const open = async (url = '/satellites') => {
-    TestBed.configureTestingModule({ providers: [provideRouter([{ path: 'satellites', component: SatellitesPage }])] });
+  const open = async (url = '/satellites', narrow = false) => {
+    TestBed.configureTestingModule({
+      providers: [provideRouter([{ path: 'satellites', component: SatellitesPage }]), { provide: NARROW_SCREEN, useValue: signal(narrow) }],
+    });
     harness = await RouterTestingHarness.create();
     await harness.navigateByUrl(url, SatellitesPage);
     await harness.fixture.whenStable();
@@ -48,6 +52,38 @@ describe('SatellitesPage', () => {
     expect(steps[0]).toContain(`${formatDeltaV(Math.abs(r.constellation.carrierBurns[0]))} prograde`);
     expect(steps[2]).toContain(`${formatDeltaV(r.constellation.satelliteBurn)} prograde`);
     expect(steps[2]).toContain('apoapsis');
+  });
+
+  it('puts the numbers of each step first, with the explanation below', async () => {
+    await open();
+    const c = evaluatePlan(DEFAULT_PLAN).constellation;
+    const step = (i: number) => el.querySelectorAll('[data-testid="steps"] li')[i];
+    const data = (i: number) =>
+      Object.fromEntries(Array.from(step(i).querySelectorAll('dl div')).map((d) => [d.querySelector('dt')!.textContent!.trim(), d.querySelector('dd')!.textContent!.trim()]));
+    expect(Array.from(el.querySelectorAll('[data-testid="steps"] h4')).map((h) => h.textContent!.replace(/^\s*\d+/, '').trim())).toEqual([
+      'Raise your apoapsis',
+      'Enter the resonant orbit',
+      'Release the satellites',
+    ]);
+    expect(data(0)).toEqual({
+      'Where': 'Parking orbit',
+      'Burn': `${formatDeltaV(Math.abs(c.carrierBurns[0]))} prograde`,
+      'New apoapsis': formatDistance(c.target.altitude),
+    });
+    expect(data(1)).toEqual({
+      'Where': 'Apoapsis',
+      'Burn': `${formatDeltaV(Math.abs(c.carrierBurns[1]))} ${c.carrierBurns[1] >= 0 ? 'prograde' : 'retrograde'}`,
+      'New periapsis': formatDistance(c.deployment.periapsis - BODIES.Kerbin.radius),
+      'Orbital period': '3h 59m 26.28s',
+    });
+    expect(data(2)).toMatchObject({ 'Where': 'Each apoapsis', 'Each satellite burns': `${formatDeltaV(c.satelliteBurn)} prograde` });
+    expect(step(1).querySelector('.explain')!.textContent).toMatch(/resonant/i);
+  });
+
+  it('calls it the new apoapsis when deploying from above', async () => {
+    await open('/satellites?from=above');
+    const labels = Array.from(el.querySelectorAll('[data-testid="steps"] li')[1].querySelectorAll('dt')).map((d) => d.textContent!.trim());
+    expect(labels).toContain('New apoapsis');
   });
 
   it('only offers relay antennas', async () => {
@@ -117,5 +153,43 @@ describe('SatellitesPage', () => {
     await enter('#plan-count', '1');
     expect(el.querySelector('[data-testid="plan-summary"]')).toBeNull();
     expect(text('[role="status"]')).toMatch(/fix/i);
+  });
+
+  describe('on a narrow screen', () => {
+    const button = (label: string) => Array.from(el.querySelectorAll('button')).find((b) => b.textContent!.trim() === label);
+
+    it('folds the form into a one-line summary, so the plan comes first', async () => {
+      await open('/satellites', true);
+      expect(el.querySelector('form')).toBeNull();
+      expect(text('[data-testid="plan-form-summary"]')).toContain('3 satellites around Kerbin');
+      expect(text('[data-testid="plan-form-summary"]')).toContain('Keostationary · RA-2 Relay Antenna');
+    });
+
+    it('opens the form again for editing, and closes it when done', async () => {
+      await open('/satellites', true);
+      expect(button('Edit')!.getAttribute('aria-expanded')).toBe('false');
+      button('Edit')!.click();
+      await settle();
+      expect(el.querySelector('#plan-body')).not.toBeNull();
+      button('Done')!.click();
+      await settle();
+      expect(el.querySelector('form')).toBeNull();
+    });
+
+    it('keeps the form open while the plan is invalid', async () => {
+      await open('/satellites?n=1', true);
+      expect(el.querySelector('form')).not.toBeNull();
+    });
+
+    it('sums up a custom altitude', async () => {
+      await open('/satellites?orbit=custom&alt=1500', true);
+      expect(text('[data-testid="plan-form-summary"]')).toContain('1,500 km ·');
+    });
+
+    it('always shows the form on a wide screen', async () => {
+      await open();
+      expect(el.querySelector('form')).not.toBeNull();
+      expect(button('Edit')).toBeUndefined();
+    });
   });
 });

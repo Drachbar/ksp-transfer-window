@@ -119,11 +119,11 @@ export function constellation({ body, targetAltitude, count, parkingAltitude, de
   if (r < top) problems.push(`The target orbit is ${body.atmosphereHeight > 0 ? 'inside the atmosphere' : 'below the surface'}.`);
   else if (deployment.periapsis < top) {
     problems.push(
-      `The deployment orbit dips ${body.atmosphereHeight > 0 ? 'into the atmosphere' : 'below the surface'} (periapsis ${km(deployment.periapsis - body.radius)}). Deploy from above instead.`,
+      `The resonant orbit dips ${body.atmosphereHeight > 0 ? 'into the atmosphere' : 'below the surface'} (periapsis ${km(deployment.periapsis - body.radius)}). Deploy from above instead.`,
     );
   }
   if (r >= soi) problems.push(`The target orbit is outside ${body.name}’s sphere of influence (${km(soi - body.radius)}).`);
-  else if (deployment.apoapsis >= soi) problems.push(`The deployment orbit leaves ${body.name}’s sphere of influence. Deploy from below instead.`);
+  else if (deployment.apoapsis >= soi) problems.push(`The resonant orbit leaves ${body.name}’s sphere of influence. Deploy from below instead.`);
   if (los !== null && targetAltitude < los) problems.push(`Too low for line of sight between neighbours: ${count} satellites need at least ${km(los)}.`);
 
   return {

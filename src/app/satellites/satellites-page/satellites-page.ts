@@ -7,8 +7,10 @@ import { DSN_LEVELS, RELAY_ANTENNAS } from '../comms';
 import { formatDeltaV, formatDistance } from '../../planner/format';
 import { formatPeriod, KERBIN_CALENDAR } from '../../astro/game-time';
 import { BODIES, BODY_NAMES } from '../../astro/bodies';
+import { NARROW_SCREEN } from '../../narrow-screen';
 
-const direction = (dv: number) => (dv >= 0 ? 'prograde' : 'retrograde');
+/** A signed burn as "253 m/s prograde" or "… retrograde". */
+const burn = (dv: number) => `${formatDeltaV(Math.abs(dv))} ${dv >= 0 ? 'prograde' : 'retrograde'}`;
 /** Orbital periods in Kerbin days and hours, to the hundredth of a second: small errors add up over many orbits. */
 const period = (t: number) => formatPeriod(t, KERBIN_CALENDAR);
 
@@ -38,6 +40,16 @@ export class SatellitesPage {
 
   protected readonly result = computed(() => (this.planForm().valid() ? evaluatePlan(this.plan()) : null));
 
+  protected readonly narrow = inject(NARROW_SCREEN);
+  /** On a narrow screen the form folds away while there is a plan to show; this opens it again. */
+  protected readonly editing = signal(false);
+  protected readonly formOpen = computed(() => !this.narrow() || this.editing() || !this.result());
+  protected readonly formSummary = computed(() => {
+    const p = this.plan();
+    const orbit = p.orbit === 'stationary' ? this.stationaryName() : formatDistance(p.altitudeKm * 1e3);
+    return { title: `${p.count} satellites around ${p.body}`, details: `${orbit} · ${p.antenna}` };
+  });
+
   protected readonly view = computed(() => {
     const r = this.result();
     if (!r) return null;
@@ -53,15 +65,35 @@ export class SatellitesPage {
       carrierDeltaV: formatDeltaV(Math.abs(c.carrierBurns[0]) + Math.abs(c.carrierBurns[1])),
       satelliteDeltaV: formatDeltaV(c.satelliteBurn),
       steps: [
-        `From your ${formatDistance(p.parkingAltitudeKm * 1e3)} parking orbit, burn ${formatDeltaV(Math.abs(c.carrierBurns[0]))} ${direction(c.carrierBurns[0])} to raise your apoapsis to ${releaseAltitude}.`,
-        `At apoapsis, burn ${formatDeltaV(Math.abs(c.carrierBurns[1]))} ${direction(c.carrierBurns[1])} to put the other side of your orbit at ${formatDistance(otherApsis - body.radius)}. The carrier now comes back to this point every ${period(c.deployment.period)}.`,
-        `Each time the carrier reaches ${c.releaseAt}, release a satellite and burn ${formatDeltaV(c.satelliteBurn)} ${c.satelliteBurnDirection} with it to circularise. After ${p.count} laps all ${p.count} satellites are in place, ${formatDistance(c.spacing)} apart.`,
+        {
+          title: 'Raise your apoapsis',
+          data: [
+            { label: 'Where', value: 'Parking orbit' },
+            { label: 'Burn', value: burn(c.carrierBurns[0]) },
+            { label: 'New apoapsis', value: releaseAltitude },
+          ],
+          explain: `From your ${formatDistance(p.parkingAltitudeKm * 1e3)} parking orbit, up to where the satellites will orbit.`,
+        },
+        {
+          title: 'Enter the resonant orbit',
+          data: [
+            { label: 'Where', value: 'Apoapsis' },
+            { label: 'Burn', value: burn(c.carrierBurns[1]) },
+            { label: c.releaseAt === 'apoapsis' ? 'New periapsis' : 'New apoapsis', value: formatDistance(otherApsis - body.radius) },
+            { label: 'Orbital period', value: period(c.deployment.period) },
+          ],
+          explain: `A resonant orbit: the carrier comes back to this point every ${period(c.deployment.period)}, ${p.count} times in the time the satellites take for ${c.releaseAt === 'apoapsis' ? p.count - 1 : p.count + 1} orbits, so each satellite ends up 1/${p.count} of an orbit from the last.`,
+        },
+        {
+          title: 'Release the satellites',
+          data: [
+            { label: 'Where', value: c.releaseAt === 'apoapsis' ? 'Each apoapsis' : 'Each periapsis' },
+            { label: 'Each satellite burns', value: `${formatDeltaV(c.satelliteBurn)} ${c.satelliteBurnDirection}` },
+            { label: 'Laps', value: String(p.count) },
+          ],
+          explain: `Release one satellite per lap and circularise it with its own engine. After ${p.count} laps all ${p.count} are in place, ${formatDistance(c.spacing)} apart.`,
+        },
       ],
-      deployment: {
-        periapsis: formatDistance(c.deployment.periapsis - body.radius),
-        apoapsis: formatDistance(c.deployment.apoapsis - body.radius),
-        period: period(c.deployment.period),
-      },
       spacing: formatDistance(c.spacing),
       lineOfSight: c.lineOfSightAltitude === null ? '–' : formatDistance(c.lineOfSightAltitude),
       problems: c.problems,
