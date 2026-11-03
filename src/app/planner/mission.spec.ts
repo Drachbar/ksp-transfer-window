@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { form } from '@angular/forms/signals';
-import { calendarOf, DEFAULT_MISSION, destinationsFor, missionSchema, nowOf, ORIGIN_GROUPS, returnMission, toSearchRequest, withValidDestination, type Mission } from './mission';
+import { calendarOf, DEFAULT_MISSION, destinationsFor, missionSchema, nowOf, ORIGIN_GROUPS, returnMission, sameSearch, toSearchRequest, withValidDestination, type Mission } from './mission';
 import { sampleResult } from '../../testing/sample-windows';
 import { EARTH_CALENDAR, KERBIN_CALENDAR } from '../astro/game-time';
 
@@ -19,6 +19,17 @@ describe('mission', () => {
       calendar: 'kerbin',
       maxFlightDays: null,
       stayDays: null,
+      aerobrake: false,
+      aerobrakeHome: true,
+      roundTrip: false,
+    });
+  });
+
+  describe('sameSearch', () => {
+    it('ignores what only matters for the trip home', () => {
+      expect(sameSearch(DEFAULT_MISSION, { ...DEFAULT_MISSION, roundTrip: true, stayDays: 30, aerobrakeHome: false })).toBe(true);
+      expect(sameSearch(DEFAULT_MISSION, { ...DEFAULT_MISSION, day: 2 })).toBe(false);
+      expect(sameSearch(DEFAULT_MISSION, { ...DEFAULT_MISSION, aerobrake: true })).toBe(false);
     });
   });
 
@@ -88,6 +99,11 @@ describe('mission', () => {
       expect(toSearchRequest(DEFAULT_MISSION).maxTimeOfFlight).toBeUndefined();
     });
 
+    it('leaves the capture to the atmosphere when aerobraking', () => {
+      expect(toSearchRequest({ ...DEFAULT_MISSION, aerobrake: true }).finalAltitude).toBeNull(); // Duna has air
+      expect(toSearchRequest({ ...DEFAULT_MISSION, destination: 'Dres', aerobrake: true }).finalAltitude).toBe(100e3); // Dres does not
+    });
+
     it('requests no insertion burn when not capturing', () => {
       expect(toSearchRequest({ ...DEFAULT_MISSION, capture: false }).finalAltitude).toBeNull();
     });
@@ -121,6 +137,13 @@ describe('returnMission', () => {
     const r = returnMission({ ...mission, stayDays: 30 }, outbound);
     expect(nowOf(r)).toBeGreaterThanOrEqual(outbound.arrivalTime + 30 * 6 * 3600);
     expect(nowOf(r) - (outbound.arrivalTime + 30 * 6 * 3600)).toBeLessThan(3600);
+  });
+
+  it('aerobrakes back home only if you choose to, whatever you do at the destination', () => {
+    expect(returnMission({ ...mission, aerobrake: false, aerobrakeHome: true }, outbound).aerobrake).toBe(true);
+    expect(toSearchRequest(returnMission({ ...mission, aerobrakeHome: true }, outbound)).finalAltitude).toBeNull(); // Kerbin has air
+    expect(returnMission({ ...mission, aerobrake: true, aerobrakeHome: false }, outbound).aerobrake).toBe(false);
+    expect(toSearchRequest(returnMission({ ...mission, aerobrakeHome: false }, outbound)).finalAltitude).toBe(80e3);
   });
 
   it('keeps the calendar and the flight time limit', () => {

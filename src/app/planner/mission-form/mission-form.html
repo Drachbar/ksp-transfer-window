@@ -1,4 +1,5 @@
 @let f = form();
+@let destination = f.destination().value();
 <form class="mission" (submit)="$event.preventDefault()" novalidate>
   <fieldset>
     <legend>Route</legend>
@@ -23,6 +24,16 @@
           }
         </select>
       </div>
+    </div>
+    <div class="trip" role="radiogroup" aria-label="Trip">
+      <label class="segment" for="mission-trip-one">
+        <input id="mission-trip-one" type="radio" name="mission-trip" value="one"
+               [checked]="!f.roundTrip().value()" (change)="f.roundTrip().value.set(false)" /> One way
+      </label>
+      <label class="segment" for="mission-trip-round">
+        <input id="mission-trip-round" type="radio" name="mission-trip" value="round"
+               [checked]="f.roundTrip().value()" (change)="f.roundTrip().value.set(true)" /> Round trip
+      </label>
     </div>
   </fieldset>
 
@@ -58,53 +69,107 @@
         <button type="button" (click)="advance(days)">+{{ days }} d</button>
       }
     </div>
-    <div class="calendar" role="radiogroup" aria-label="Calendar">
-      <label class="choice"><input type="radio" value="kerbin" [formField]="f.calendar" /> Kerbin time (6 h days)</label>
-      <label class="choice"><input type="radio" value="earth" [formField]="f.calendar" /> Earth time (24 h days)</label>
-    </div>
   </fieldset>
 
   <fieldset>
-    <legend>Orbits</legend>
-    <div class="row">
-      @let initialError = error(f.initialAltitudeKm);
-      <div class="field">
-        <label for="mission-initial-altitude">Parking orbit at {{ f.origin().value() }} (km)</label>
-        <input id="mission-initial-altitude" type="number" inputmode="decimal" [formField]="f.initialAltitudeKm"
-               [attr.aria-invalid]="!!initialError" aria-describedby="mission-initial-altitude-error mission-initial-altitude-hint" />
-        <span class="hint" id="mission-initial-altitude-hint">0 = no parking orbit</span>
-        <span class="error" id="mission-initial-altitude-error">{{ initialError }}</span>
-      </div>
-      @let finalError = error(f.finalAltitudeKm);
-      <div class="field">
-        <label class="choice" for="mission-capture">
-          <input id="mission-capture" type="checkbox" [formField]="f.capture" />
-          Capture into orbit at {{ f.destination().value() }}
-        </label>
-        <label class="sr-only" for="mission-final-altitude">Capture orbit altitude (km)</label>
-        <div class="with-unit">
-          <input id="mission-final-altitude" type="number" inputmode="decimal" [formField]="f.finalAltitudeKm"
-                 [attr.aria-invalid]="!!finalError" aria-describedby="mission-final-altitude-error" />
-          <span class="unit" aria-hidden="true">km</span>
-        </div>
-        <span class="error" id="mission-final-altitude-error">{{ finalError }}</span>
-      </div>
+    <legend>Arrival at {{ destination }}</legend>
+    <div class="choices">
+      <label class="choice" for="mission-arrival-burn">
+        <input id="mission-arrival-burn" type="radio" name="mission-arrival" value="burn"
+               [checked]="arrival() === 'burn'" (change)="setArrival('burn')" /> Burn into orbit
+      </label>
+      <label class="choice" for="mission-arrival-aerobrake">
+        <input id="mission-arrival-aerobrake" type="radio" name="mission-arrival" value="aerobrake" [disabled]="!canAerobrake()"
+               [attr.aria-describedby]="canAerobrake() ? null : 'mission-aerobrake-hint'"
+               [checked]="arrival() === 'aerobrake'" (change)="setArrival('aerobrake')" /> Aerobrake
+      </label>
+      <label class="choice" for="mission-arrival-flyby">
+        <input id="mission-arrival-flyby" type="radio" name="mission-arrival" value="flyby"
+               [checked]="arrival() === 'flyby'" (change)="setArrival('flyby')" /> Fly by
+      </label>
     </div>
-    @let maxError = error(f.maxFlightDays);
-    <div class="field max-flight">
-      <label for="mission-max-flight">Max flight time (days)</label>
-      <input id="mission-max-flight" type="number" inputmode="numeric" placeholder="No limit" [formField]="f.maxFlightDays"
-             [attr.aria-invalid]="!!maxError" aria-describedby="mission-max-flight-error mission-max-flight-hint" />
-      <span class="hint" id="mission-max-flight-hint">Leave empty for no limit. Faster trips cost more Δv.</span>
-      <span class="error" id="mission-max-flight-error">{{ maxError }}</span>
-    </div>
-    @let stayError = error(f.stayDays);
-    <div class="field max-flight">
-      <label for="mission-stay">Minimum stay at {{ f.destination().value() }} (days)</label>
-      <input id="mission-stay" type="number" inputmode="numeric" placeholder="Fly home as soon as possible" [formField]="f.stayDays"
-             [attr.aria-invalid]="!!stayError" aria-describedby="mission-stay-error mission-stay-hint" />
-      <span class="hint" id="mission-stay-hint">Used to find your way home.</span>
-      <span class="error" id="mission-stay-error">{{ stayError }}</span>
-    </div>
+    @if (!canAerobrake()) {
+      <span class="hint" id="mission-aerobrake-hint" data-testid="aerobrake-hint">{{ destination }} has no atmosphere.</span>
+    }
   </fieldset>
+
+  @if (f.roundTrip().value()) {
+    <fieldset>
+      <legend>Trip home</legend>
+      @let stayError = error(f.stayDays);
+      <div class="field">
+        <label for="mission-stay">Minimum stay at {{ destination }} (days)</label>
+        <input id="mission-stay" type="number" inputmode="numeric" placeholder="Fly home as soon as possible" [formField]="f.stayDays"
+               [attr.aria-invalid]="!!stayError" aria-describedby="mission-stay-error" />
+        <span class="error" id="mission-stay-error">{{ stayError }}</span>
+      </div>
+      @if (homeHasAtmosphere()) {
+        <label class="choice home-aerobrake" for="mission-aerobrake-home">
+          <input id="mission-aerobrake-home" type="checkbox" [formField]="f.aerobrakeHome" />
+          Aerobrake when coming back to {{ f.origin().value() }}
+        </label>
+      }
+    </fieldset>
+  }
+
+  <div class="more">
+    <button type="button" class="more-toggle" data-testid="more-options" aria-controls="mission-more"
+            [attr.aria-expanded]="moreOpen()" (click)="showMore.set(!moreOpen())">
+      {{ moreOpen() ? 'Fewer options' : 'More options' }}
+    </button>
+    @if (!moreOpen()) {
+      <span class="hint" data-testid="more-summary">{{ moreSummary() }}</span>
+    }
+  </div>
+
+  @if (moreOpen()) {
+    <div id="mission-more" class="more-panel">
+      <fieldset>
+        <legend>Orbits</legend>
+        <div class="row aligned">
+          @let initialError = error(f.initialAltitudeKm);
+          <div class="field">
+            <label for="mission-initial-altitude">Parking orbit at {{ f.origin().value() }}</label>
+            <div class="with-unit">
+              <input id="mission-initial-altitude" type="number" inputmode="decimal" [formField]="f.initialAltitudeKm"
+                     [attr.aria-invalid]="!!initialError" aria-describedby="mission-initial-altitude-error mission-initial-altitude-hint" />
+              <span class="unit" aria-hidden="true">km</span>
+            </div>
+            <div class="notes">
+              <span class="hint" id="mission-initial-altitude-hint">0 = no parking orbit</span>
+              <span class="error" id="mission-initial-altitude-error">{{ initialError }}</span>
+            </div>
+          </div>
+          @let finalError = error(f.finalAltitudeKm);
+          <div class="field">
+            <label for="mission-final-altitude">Capture orbit at {{ destination }}</label>
+            <div class="with-unit">
+              <input id="mission-final-altitude" type="number" inputmode="decimal" [formField]="f.finalAltitudeKm"
+                     [attr.aria-invalid]="!!finalError" aria-describedby="mission-final-altitude-error" />
+              <span class="unit" aria-hidden="true">km</span>
+            </div>
+            <div class="notes">
+              <span class="error" id="mission-final-altitude-error">{{ finalError }}</span>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Calendar</legend>
+        <div class="calendar">
+          <label class="choice"><input type="radio" value="kerbin" [formField]="f.calendar" /> Kerbin time (6 h days)</label>
+          <label class="choice"><input type="radio" value="earth" [formField]="f.calendar" /> Earth time (24 h days)</label>
+        </div>
+      </fieldset>
+
+      @let maxError = error(f.maxFlightDays);
+      <div class="field">
+        <label for="mission-max-flight">Max flight time (days)</label>
+        <input id="mission-max-flight" type="number" inputmode="numeric" placeholder="No limit" [formField]="f.maxFlightDays"
+               [attr.aria-invalid]="!!maxError" aria-describedby="mission-max-flight-error" />
+        <span class="error" id="mission-max-flight-error">{{ maxError }}</span>
+      </div>
+    </div>
+  }
 </form>

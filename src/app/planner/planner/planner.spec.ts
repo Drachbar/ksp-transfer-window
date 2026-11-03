@@ -264,15 +264,40 @@ describe('Planner', () => {
     });
   });
 
+  describe('one-way trip', () => {
+    it('does not look for the way home', async () => {
+      await finishSearch();
+      expect(search.returnCalls.length).toBe(0);
+      expect(el.querySelector('[aria-labelledby="step-return"]')).toBeNull();
+    });
+
+    it('becomes a round trip without searching the windows again or losing the chosen one', async () => {
+      await finishSearch();
+      el.querySelectorAll<HTMLButtonElement>('app-window-list button.window')[2].click();
+      await settle();
+      el.querySelector<HTMLInputElement>('#mission-trip-round')!.click();
+      await settle();
+      expect(search.calls.length).toBe(1);
+      expect(el.querySelector('app-window-card')!.textContent).toContain('Window 3');
+      expect(search.returnCalls.length).toBe(1);
+      expect(TestBed.inject(Router).url).toContain('trip=round');
+    });
+  });
+
   describe('return trip', () => {
     const home = sampleResult().windows[1]; // stands in for a Duna → Kerbin window
     const homeResult = { windows: [home], departNow: null };
+
+    beforeEach(async () => {
+      el.querySelector<HTMLInputElement>('#mission-trip-round')!.click();
+      await settle();
+    });
 
     it('looks for the way home from the window that is shown', async () => {
       await finishSearch();
       expect(search.returnCalls.length).toBe(1);
       expect(search.returnCalls[0].request).toEqual({
-        ...toSearchRequest(returnMission(DEFAULT_MISSION, result.windows[0])),
+        ...toSearchRequest(returnMission({ ...DEFAULT_MISSION, roundTrip: true }, result.windows[0])),
         windowCount: 3,
         suggestPlaneChange: false,
       });
@@ -308,8 +333,28 @@ describe('Planner', () => {
       expect(card.querySelector('[aria-labelledby="step-return"]')).toBeNull();
     });
 
+    it('adds the trip home to the mission Δv budget once it is known', async () => {
+      await finishSearch();
+      const budget = () => el.querySelector('app-mission-budget')!.textContent!;
+      expect(budget()).toMatch(/way home/i);
+      search.returnCalls[0].resolve(homeResult);
+      await settle();
+      Array.from(el.querySelectorAll<HTMLButtonElement>('app-mission-budget button')).find((b) => b.textContent!.includes('Show breakdown'))!.click();
+      await settle();
+      expect(budget()).toContain('Return to Kerbin');
+    });
+
+    it('does not show the budget for the trip home itself', async () => {
+      await finishSearch();
+      search.returnCalls[0].resolve(homeResult);
+      await settle();
+      Array.from(el.querySelectorAll('button')).find((b) => b.textContent!.includes('Show the return trip'))!.click();
+      await settle();
+      expect(el.querySelector('app-mission-budget')).toBeNull();
+    });
+
     it('does not plan a way home for a flyby', async () => {
-      const capture = el.querySelector<HTMLInputElement>('#mission-capture')!;
+      const capture = el.querySelector<HTMLInputElement>('#mission-arrival-flyby')!;
       capture.click();
       await settle();
       search.calls.at(-1)!.resolve(result);

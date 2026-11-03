@@ -92,7 +92,6 @@ select {
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem 1rem;
-  margin-top: 0.6rem;
 }
 
 .hint {
@@ -107,10 +106,6 @@ select {
   &:empty {
     display: none;
   }
-}
-
-.max-flight {
-  margin-top: 0.75rem;
 }
 
 
@@ -133,4 +128,100 @@ select {
       border-color: var(--accent);
     }
   }
+}
+
+// Two fields side by side whose inputs line up even if one label wraps: the fields share the
+// rows of the parent grid (label, input, notes).
+.row.aligned {
+  grid-template-rows: auto auto auto;
+
+  > .field {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: span 3;
+    align-items: end;
+    gap: 0.25rem;
+  }
+
+  .notes {
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+}
+
+.choices {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+// One way / round trip, as a two-part switch.
+.trip {
+  display: inline-flex;
+  margin-top: 0.75rem;
+  padding: 2px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+}
+
+.segment {
+  position: relative;
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  &:has(input:checked) {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  &:has(input:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+.more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.more-toggle {
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--accent-bg);
+  }
+}
+
+.more-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.choice:has(input:disabled) {
+  opacity: 0.55;
+}
+
+.home-aerobrake {
+  margin-top: 0.6rem;
 }

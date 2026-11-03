@@ -4,6 +4,8 @@ import { sampleResult } from '../../../testing/sample-windows';
 import { DEFAULT_MISSION, returnMission, type Mission } from '../mission';
 import { formatDate, formatDuration, formatFlightTime, formatShortDate, KERBIN_CALENDAR } from '../../astro/game-time';
 import { describeBurn, formatAngle, formatDeltaV, formatSignedDeltaV } from '../format';
+import { arrivalExcessSpeed, entrySpeed, periapsisRaiseAfterAerocapture } from '../aerobraking';
+import { BODIES } from '../../astro/bodies';
 import { describePhase } from '../solar-system-diagram/solar-system-layout';
 import type { TransferWindow } from '../../search/window-finder';
 
@@ -65,6 +67,26 @@ describe('WindowCard', () => {
     it('says how to capture at the destination', async () => {
       const el = await render();
       expect(instruction(el, 'step-arrive')).toContain(`burn ${formatDeltaV(window.transfer.insertionDeltaV)} retrograde to capture into a 100 km orbit`);
+    });
+
+    it('explains aerobraking instead of a capture burn', async () => {
+      const el = await render(window, { ...DEFAULT_MISSION, aerobrake: true });
+      const text = instruction(el, 'step-arrive');
+      const fix = periapsisRaiseAfterAerocapture(BODIES.Duna, 100e3)!;
+      expect(text).toContain('atmosphere');
+      expect(text).toContain(formatDeltaV(entrySpeed(BODIES.Duna, arrivalExcessSpeed(window, BODIES.Duna))));
+      expect(text).toContain(`${formatDeltaV(fix)} prograde`);
+      expect(field(el, 'capture')).toBe(`~${formatDeltaV(fix)}`);
+    });
+
+    it('warns when the orbit to aerobrake into is inside the atmosphere', async () => {
+      const el = await render(window, { ...DEFAULT_MISSION, aerobrake: true, finalAltitudeKm: 30 });
+      expect(instruction(el, 'step-arrive')).toMatch(/inside Duna’s atmosphere/i);
+    });
+
+    it('burns as usual where there is no atmosphere', async () => {
+      const el = await render(window, { ...DEFAULT_MISSION, destination: 'Dres', aerobrake: true });
+      expect(instruction(el, 'step-arrive')).toContain('retrograde to capture');
     });
 
     it('says there is nothing to do on arrival for a flyby', async () => {

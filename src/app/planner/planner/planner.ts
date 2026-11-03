@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, effect, ElementRef, inject, InjectionToken, signal, viewChild, type Signal } from '@angular/core';
+import { Component, computed, DestroyRef, effect, ElementRef, inject, InjectionToken, signal, untracked, viewChild, type Signal } from '@angular/core';
 import { form } from '@angular/forms/signals';
 import { ActivatedRoute, Router } from '@angular/router';
 import { loadStoredMission, MISSION_STORAGE, missionFromQueryParams, missionToQueryParams, restoreMission, storeMission } from '../mission-state';
@@ -6,8 +6,9 @@ import { MissionForm } from '../mission-form/mission-form';
 import { WindowCard, type ReturnTrip } from '../window-card/window-card';
 import { WindowList } from '../window-list/window-list';
 import { DestinationOverview } from '../destination-overview/destination-overview';
+import { MissionBudget } from '../mission-budget/mission-budget';
 import { PorkchopPlot, type PorkchopPick } from '../porkchop-plot/porkchop-plot';
-import { calendarOf, missionSchema, nowOf, returnMission, toSearchRequest, type Mission } from '../mission';
+import { calendarOf, missionSchema, nowOf, plansTripHome, returnMission, sameSearch, toSearchRequest, type Mission } from '../mission';
 import { formatDeltaV } from '../format';
 import { formatDate, formatDuration, formatFlightTime } from '../../astro/game-time';
 import { WindowSearch } from '../../search/window-search';
@@ -40,7 +41,7 @@ const isAbort = (e: unknown) => e instanceof DOMException && e.name === 'AbortEr
 
 @Component({
   selector: 'app-planner',
-  imports: [MissionForm, WindowCard, WindowList, PorkchopPlot, DestinationOverview],
+  imports: [MissionForm, WindowCard, WindowList, PorkchopPlot, DestinationOverview, MissionBudget],
   templateUrl: './planner.html',
   styleUrl: './planner.scss',
 })
@@ -68,6 +69,8 @@ export class Planner {
   protected readonly error = signal<string | null>(null);
   protected readonly selected = signal(0);
   private searchedOnce = false;
+  /** The latest mission searched for (or one that searches for the same windows). */
+  private searched: Mission | null = null;
   /** A transfer picked in the porkchop plot; shown instead of the selected window. */
   protected readonly picked = signal<TransferWindow | null>(null);
   /** What the picked transfer is: a point from the plot, a suggested plane change or the trip home. */
@@ -81,6 +84,13 @@ export class Planner {
     equal: (a, b) => a === b || (!!a && !!b && a.departureTime === b.departureTime && a.timeOfFlight === b.timeOfFlight),
   });
 
+  /** The card shows the trip home itself (not an outbound transfer). */
+  protected readonly showingTripHome = computed(() => this.pickedMission() !== null);
+  /** The window home from the transfer that is shown, once found. */
+  protected readonly homewardWindow = computed(() => {
+    const trip = this.returnTrip();
+    return trip?.state === 'found' ? trip.window : null;
+  });
   protected readonly cardMission = computed(() => this.pickedMission() ?? this.resultMission());
   /** The trip home waits from your arrival, not from today. */
   protected readonly cardCountdownFrom = computed(() => (this.pickedMission() ? 'after you arrive' : null));
@@ -155,6 +165,13 @@ export class Planner {
     effect((onCleanup) => {
       if (!this.missionForm().valid()) return;
       const mission = this.mission();
+      // Only the trip home changed: keep the windows (and the one chosen), just plan the way home again.
+      if (this.searched && sameSearch(this.searched, mission)) {
+        this.searched = mission;
+        this.remember(mission);
+        if (untracked(this.progress) === null) this.resultMission.set(mission);
+        return;
+      }
       // Debounce typing, but do not keep the first search waiting: there is nothing to wait for.
       const delay = this.searchedOnce ? this.debounceMs : 0;
       this.searchedOnce = true;
@@ -166,7 +183,7 @@ export class Planner {
     effect((onCleanup) => {
       const outbound = this.outbound();
       const mission = this.resultMission();
-      if (!outbound || !mission.capture) {
+      if (!outbound || !plansTripHome(mission)) {
         this.returnTrip.set(null);
         return;
       }
@@ -188,6 +205,7 @@ export class Planner {
   }
 
   private async search(mission: Mission) {
+    this.searched = mission;
     this.remember(mission);
     this.progress.set(0);
     this.error.set(null);
@@ -204,7 +222,8 @@ export class Planner {
       const result = await this.windowSearch.search({ ...request, suggestPlaneChange: false }, (f) => this.progress.set(f));
       this.result.set(result);
       void this.addPlaneChangeTips(result, alternatives, mission);
-      this.resultMission.set(mission);
+      // The trip home may have changed while searching.
+      this.resultMission.set(this.searched && sameSearch(this.searched, mission) ? this.searched : mission);
       this.selected.set(0);
       this.picked.set(null);
       this.pickedMission.set(null);

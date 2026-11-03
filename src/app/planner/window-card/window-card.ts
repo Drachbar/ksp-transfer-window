@@ -1,7 +1,8 @@
 import { Component, computed, input, output } from '@angular/core';
 import { EjectionDiagram } from '../ejection-diagram/ejection-diagram';
 import { SolarSystemDiagram } from '../solar-system-diagram/solar-system-diagram';
-import { calendarOf, nowOf, type Mission } from '../mission';
+import { aerobrakesAt, calendarOf, nowOf, type Mission } from '../mission';
+import { arrivalExcessSpeed, entrySpeed, periapsisRaiseAfterAerocapture } from '../aerobraking';
 import { describeBurn, formatAngle, formatDeltaV, formatSignedDeltaV } from '../format';
 import { describePhase } from '../solar-system-diagram/solar-system-layout';
 import { formatDate, formatDuration, formatFlightTime, formatShortDate } from '../../astro/game-time';
@@ -51,6 +52,11 @@ export class WindowCard {
     const m = this.mission();
     const calendar = calendarOf(m);
     const wait = w.departureTime - nowOf(m);
+    const destination = BODIES[m.destination];
+    const fix = aerobrakesAt(m) ? periapsisRaiseAfterAerocapture(destination, m.finalAltitudeKm * 1e3) : null;
+    const aerobrake = aerobrakesAt(m)
+      ? { fix: fix === null ? null : formatDeltaV(fix), entrySpeed: formatDeltaV(entrySpeed(destination, arrivalExcessSpeed(w, destination))) }
+      : null;
     return {
       departure: formatDate(w.departureTime, calendar),
       departureShort: formatShortDate(w.departureTime, calendar),
@@ -66,7 +72,8 @@ export class WindowCard {
       phaseAngle: formatAngle(w.phaseAngle),
       arrival: formatDate(w.arrivalTime, calendar),
       flightTime: formatFlightTime(w.timeOfFlight, calendar),
-      capture: m.capture ? formatDeltaV(w.transfer.insertionDeltaV) : 'None (flyby)',
+      capture: aerobrake ? (aerobrake.fix ? `~${aerobrake.fix}` : '–') : m.capture ? formatDeltaV(w.transfer.insertionDeltaV) : 'None (flyby)',
+      aerobrake,
       parent: BODIES[m.origin].orbit!.referenceBody.name,
       refined: w.refined,
       planeChange:

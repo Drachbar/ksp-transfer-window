@@ -26,6 +26,12 @@ export interface Mission {
   maxFlightDays: number | null;
   /** Shortest stay at the destination before flying home, in days; null = leave as soon as possible. */
   stayDays: number | null;
+  /** Let the destination's atmosphere do the capture (if it has one). */
+  aerobrake: boolean;
+  /** Let the home atmosphere do the capture on the way back (if it has one). */
+  aerobrakeHome: boolean;
+  /** Also plan the way home (otherwise only the trip there). */
+  roundTrip: boolean;
 }
 
 export const DEFAULT_MISSION: Mission = {
@@ -40,6 +46,9 @@ export const DEFAULT_MISSION: Mission = {
   calendar: 'kerbin',
   maxFlightDays: null,
   stayDays: null,
+  aerobrake: false,
+  aerobrakeHome: true,
+  roundTrip: false,
 };
 
 export const WINDOW_COUNT = 5;
@@ -79,13 +88,23 @@ export const calendarOf = (m: Pick<Mission, 'calendar'>): Calendar => (m.calenda
 /** The current game time in seconds. */
 export const nowOf = (m: Mission): number => fromGameDate({ year: m.year, day: m.day, hour: m.hour, minute: 0, second: 0 }, calendarOf(m));
 
+/** True when the mission lets the destination's atmosphere do the capture. */
+export const aerobrakesAt = (m: Mission) => m.capture && m.aerobrake && BODIES[m.destination].atmosphereHeight > 0;
+
+/** True when the way home should be planned: a round trip that stops at the destination. */
+export const plansTripHome = (m: Mission) => m.roundTrip && m.capture;
+
+/** True when both missions search for the same windows (they may differ in the trip home). */
+export const sameSearch = (a: Mission, b: Mission) => JSON.stringify(toSearchRequest(a)) === JSON.stringify(toSearchRequest(b));
+
 export function toSearchRequest(m: Mission): WindowSearchRequest {
   return {
     origin: m.origin,
     destination: m.destination,
     now: nowOf(m),
     initialAltitude: m.initialAltitudeKm * 1e3,
-    finalAltitude: m.capture ? m.finalAltitudeKm * 1e3 : null,
+    // Aerobraking or a flyby: no capture burn for the search to minimise.
+    finalAltitude: m.capture && !aerobrakesAt(m) ? m.finalAltitudeKm * 1e3 : null,
     windowCount: WINDOW_COUNT,
     maxTimeOfFlight: m.maxFlightDays === null ? undefined : m.maxFlightDays * calendarOf(m).hoursPerDay * 3600,
   };
@@ -123,6 +142,8 @@ export function returnMission(m: Mission, outbound: TransferWindow): Mission {
     initialAltitudeKm: m.finalAltitudeKm,
     finalAltitudeKm: m.initialAltitudeKm,
     capture: true,
+    // Coming home is the destination of the return trip.
+    aerobrake: m.aerobrakeHome,
     stayDays: null,
   };
 }
@@ -135,6 +156,7 @@ export const missionSchema = schema<Mission>((p) => {
   between(p.finalAltitudeKm, 'Altitude', 0, null, p.calendar);
   disabled(p.finalAltitudeKm, ({ valueOf }) => !valueOf(p.capture));
   disabled(p.stayDays, ({ valueOf }) => !valueOf(p.capture));
+  disabled(p.aerobrakeHome, ({ valueOf }) => !valueOf(p.capture));
   validate(p.stayDays, ({ value }) => {
     const v = value();
     return v === null || (Number.isFinite(v) && v >= 0) ? undefined : { kind: 'range', message: 'Stay must be 0 days or more' };

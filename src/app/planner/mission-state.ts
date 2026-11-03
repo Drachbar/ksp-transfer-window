@@ -36,6 +36,9 @@ function sanitize(raw: Record<string, unknown>): Partial<Mission> {
     if (isFiniteNumber(raw[key])) m[key] = raw[key];
   }
   if (typeof raw['capture'] === 'boolean') m.capture = raw['capture'];
+  if (typeof raw['aerobrake'] === 'boolean') m.aerobrake = raw['aerobrake'];
+  if (typeof raw['aerobrakeHome'] === 'boolean') m.aerobrakeHome = raw['aerobrakeHome'];
+  if (typeof raw['roundTrip'] === 'boolean') m.roundTrip = raw['roundTrip'];
   if (typeof raw['calendar'] === 'string' && CALENDARS.has(raw['calendar'])) m.calendar = raw['calendar'] as CalendarName;
   if (raw['maxFlightDays'] === null || (isFiniteNumber(raw['maxFlightDays']) && raw['maxFlightDays'] > 0)) {
     m.maxFlightDays = raw['maxFlightDays'] as number | null;
@@ -58,6 +61,9 @@ export function missionToQueryParams(m: Mission): Record<string, string> {
     calendar: m.calendar,
     ...(m.maxFlightDays !== null ? { maxflight: String(m.maxFlightDays) } : {}),
     ...(m.stayDays !== null ? { stay: String(m.stayDays) } : {}),
+    ...(m.aerobrake ? { aero: '1' } : {}),
+    ...(!m.aerobrakeHome ? { aerohome: '0' } : {}),
+    ...(m.roundTrip ? { trip: 'round' } : {}),
   };
 }
 
@@ -77,6 +83,11 @@ export function missionFromQueryParams(get: (key: string) => string | null): Par
     // A complete search (as written by missionToQueryParams) without a limit means "no limit".
     maxFlightDays: get('maxflight') === null ? (isBody(get('from')) ? null : undefined) : parseNumber(get('maxflight')),
     stayDays: get('stay') === null ? (isBody(get('from')) ? null : undefined) : parseNumber(get('stay')),
+    aerobrake: get('aero') === '1' ? true : isBody(get('from')) ? false : undefined,
+    // On unless switched off; old links' "aero=1" (both ends) therefore still means both.
+    aerobrakeHome: get('aerohome') === '0' ? false : isBody(get('from')) ? true : undefined,
+    // Links from before one-way trips always planned the way home; a stay there still says so.
+    roundTrip: get('trip') === 'round' || get('stay') !== null ? true : isBody(get('from')) ? false : undefined,
   });
 }
 

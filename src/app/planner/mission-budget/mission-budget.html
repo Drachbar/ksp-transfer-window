@@ -1,0 +1,57 @@
+@let m = mission();
+@let b = budget();
+<section class="budget" aria-labelledby="budget-heading">
+  <div class="header">
+    <h2 id="budget-heading" class="panel-title">Mission Δv</h2>
+    <button type="button" class="toggle" [attr.aria-expanded]="open()" aria-controls="budget-breakdown" (click)="open.set(!open())">
+      {{ open() ? 'Hide breakdown' : 'Show breakdown' }}
+    </button>
+  </div>
+  <p class="total" data-testid="budget-total">
+    <strong>{{ b.total }}</strong> <span class="includes">{{ b.includes }}</span>
+  </p>
+  @if (comeBack() && !homeward()) {
+    <p class="muted" role="status">Working out the way home…</p>
+  }
+
+  @if (open()) {
+    <div id="budget-breakdown">
+      <div class="options" role="group" aria-label="What to include">
+        <label class="choice"><input type="checkbox" [checked]="launch()" (change)="launch.set(!launch())" /> Launch from {{ m.origin }}</label>
+        @if (canLand()) {
+          <label class="choice"><input type="checkbox" [checked]="land()" (change)="land.set(!land())" /> Land on {{ m.destination }}</label>
+        }
+      </div>
+
+      <table>
+        <caption class="sr-only">Δv for each part of the mission</caption>
+        <thead>
+          <tr>
+            <th scope="col">Leg</th>
+            <th scope="col" class="num">Δv</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of b.rows; track row.label) {
+            <tr>
+              <th scope="row">
+                {{ row.label }}
+                @if (row.note) {
+                  <span class="note">{{ row.note }}</span>
+                }
+              </th>
+              <td class="num">{{ row.value }}</td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <th scope="row">Total</th>
+            <td class="num">{{ b.total }}</td>
+          </tr>
+        </tfoot>
+      </table>
+      <p class="muted">~ marks estimates: landings and launches through an atmosphere depend on your craft and piloting. Plan some margin.</p>
+    </div>
+  }
+</section>

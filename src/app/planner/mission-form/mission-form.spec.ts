@@ -30,6 +30,16 @@ describe('MissionForm', () => {
     await fixture.whenStable();
   };
   const options = (select: HTMLSelectElement) => Array.from(select.options).map((o) => o.value);
+  const hasLabel = (text: string) => Array.from(el.querySelectorAll('label')).some((l) => l.textContent!.includes(text));
+  const moreButton = () => el.querySelector<HTMLButtonElement>('[data-testid="more-options"]')!;
+  const more = async () => {
+    if (moreButton().getAttribute('aria-expanded') !== 'true') moreButton().click();
+    await fixture.whenStable();
+  };
+  const planRoundTrip = async () => {
+    control<HTMLInputElement>('Round trip').click();
+    await fixture.whenStable();
+  };
 
   beforeEach(() => render());
 
@@ -59,15 +69,18 @@ describe('MissionForm', () => {
     await enter(control<HTMLInputElement>('Year'), '3');
     await enter(control<HTMLInputElement>('Day'), '120');
     await enter(control<HTMLInputElement>('Hour'), '4');
+    await more();
     await enter(control<HTMLInputElement>('Parking orbit'), '80');
     expect(mission()).toMatchObject({ year: 3, day: 120, hour: 4, initialAltitudeKm: 80 });
   });
 
-  it('explains what a parking orbit of 0 km means', () => {
+  it('explains what a parking orbit of 0 km means', async () => {
+    await more();
     expect(el.textContent).toContain('0 = no parking orbit');
   });
 
   it('takes an optional maximum flight time', async () => {
+    await more();
     const max = control<HTMLInputElement>('Max flight time');
     expect(max.value).toBe('');
     await enter(max, '250');
@@ -90,7 +103,52 @@ describe('MissionForm', () => {
     });
   });
 
+  describe('one way or round trip', () => {
+    it('plans one way by default, without asking about the trip home', () => {
+      expect(control<HTMLInputElement>('One way').checked).toBe(true);
+      expect(hasLabel('Minimum stay')).toBe(false);
+      expect(hasLabel('coming back')).toBe(false);
+    });
+
+    it('asks about the trip home on a round trip', async () => {
+      await planRoundTrip();
+      expect(mission().roundTrip).toBe(true);
+      expect(hasLabel('Minimum stay')).toBe(true);
+      control<HTMLInputElement>('One way').click();
+      await fixture.whenStable();
+      expect(mission().roundTrip).toBe(false);
+    });
+  });
+
+  describe('more options', () => {
+    it('keeps the orbits, calendar and flight time limit out of the way, summing them up', () => {
+      expect(moreButton().getAttribute('aria-expanded')).toBe('false');
+      expect(hasLabel('Parking orbit')).toBe(false);
+      expect(hasLabel('Max flight time')).toBe(false);
+      expect(hasLabel('Kerbin time')).toBe(false);
+      expect(el.querySelector('[data-testid="more-summary"]')!.textContent).toBe('100 km → 100 km · Kerbin time · no time limit');
+    });
+
+    it('shows them when asked', async () => {
+      await more();
+      expect(moreButton().getAttribute('aria-expanded')).toBe('true');
+      expect(hasLabel('Parking orbit')).toBe(true);
+      expect(hasLabel('Max flight time')).toBe(true);
+    });
+
+    it('sums up a flyby and a time limit', async () => {
+      await render({ ...DEFAULT_MISSION, capture: false, initialAltitudeKm: 80, maxFlightDays: 250, calendar: 'earth' });
+      expect(el.querySelector('[data-testid="more-summary"]')!.textContent).toBe('80 km parking orbit · Earth time · max 250 days');
+    });
+
+    it('opens by itself when one of them is invalid', async () => {
+      await render({ ...DEFAULT_MISSION, initialAltitudeKm: -5 });
+      expect(hasLabel('Parking orbit')).toBe(true);
+    });
+  });
+
   it('takes an optional minimum stay at the destination', async () => {
+    await planRoundTrip();
     const stay = control<HTMLInputElement>('Minimum stay');
     expect(stay.value).toBe('');
     await enter(stay, '30');
@@ -99,10 +157,82 @@ describe('MissionForm', () => {
     expect(mission().stayDays).toBeNull();
   });
 
-  it('does not ask how long you stay on a flyby', async () => {
-    control<HTMLInputElement>('Capture').click();
-    await fixture.whenStable();
-    expect(control<HTMLInputElement>('Minimum stay').disabled).toBe(true);
+  describe('arrival', () => {
+    const choose = async (label: string) => {
+      control<HTMLInputElement>(label).click();
+      await fixture.whenStable();
+    };
+
+    it('puts both orbit altitudes side by side, each with its own label', async () => {
+      await more();
+      const parking = control<HTMLInputElement>('Parking orbit');
+      const capture = control<HTMLInputElement>('Capture orbit');
+      expect(parking.closest('.row')).toBe(capture.closest('.row'));
+    });
+
+    it('offers burning into orbit, aerobraking or flying by, burning by default', () => {
+      const options = Array.from(el.querySelectorAll<HTMLInputElement>('input[name="mission-arrival"]'));
+      expect(options.map((o) => o.value)).toEqual(['burn', 'aerobrake', 'flyby']);
+      expect(control<HTMLInputElement>('Burn into orbit').checked).toBe(true);
+    });
+
+    it('aerobrakes', async () => {
+      await choose('Aerobrake');
+      expect(mission()).toMatchObject({ capture: true, aerobrake: true });
+    });
+
+    it('flies by, without a capture orbit or a stay', async () => {
+      await more();
+      await planRoundTrip();
+      await choose('Fly by');
+      expect(mission()).toMatchObject({ capture: false, aerobrake: false });
+      expect(control<HTMLInputElement>('Capture orbit').disabled).toBe(true);
+      expect(control<HTMLInputElement>('Minimum stay').disabled).toBe(true);
+    });
+
+    it('goes back to burning into orbit', async () => {
+      await choose('Aerobrake');
+      await choose('Burn into orbit');
+      expect(mission()).toMatchObject({ capture: true, aerobrake: false });
+    });
+
+    it('only offers aerobraking where the destination has an atmosphere, and says why', async () => {
+      expect(control<HTMLInputElement>('Aerobrake').disabled).toBe(false);
+      expect(el.querySelector('[data-testid="aerobrake-hint"]')).toBeNull();
+      await enter(control<HTMLSelectElement>('To'), 'Dres');
+      expect(control<HTMLInputElement>('Aerobrake').disabled).toBe(true);
+      expect(el.querySelector('[data-testid="aerobrake-hint"]')!.textContent).toMatch(/Dres has no atmosphere/);
+    });
+
+    it('switches to burning into orbit if the new destination has no atmosphere', async () => {
+      await choose('Aerobrake');
+      await enter(control<HTMLSelectElement>('To'), 'Dres');
+      expect(mission()).toMatchObject({ capture: true, aerobrake: false });
+      expect(control<HTMLInputElement>('Burn into orbit').checked).toBe(true);
+    });
+  });
+
+  describe('aerobraking back home', () => {
+    beforeEach(() => planRoundTrip());
+
+    it('is on by default and can be switched off', async () => {
+      const home = control<HTMLInputElement>('Aerobrake when coming back');
+      expect(home.checked).toBe(true);
+      home.click();
+      await fixture.whenStable();
+      expect(mission().aerobrakeHome).toBe(false);
+    });
+
+    it('is not offered when home has no atmosphere', async () => {
+      await render({ ...DEFAULT_MISSION, origin: 'Mun', destination: 'Minmus', roundTrip: true });
+      expect(Array.from(el.querySelectorAll('label')).some((l) => l.textContent!.includes('coming back'))).toBe(false);
+    });
+
+    it('does not apply to a flyby', async () => {
+      control<HTMLInputElement>('Fly by').click();
+      await fixture.whenStable();
+      expect(control<HTMLInputElement>('Aerobrake when coming back').disabled).toBe(true);
+    });
   });
 
   it('limits the number fields in the browser too (arrows and spinners stop at the limits)', async () => {
@@ -110,6 +240,7 @@ describe('MissionForm', () => {
       const input = control<HTMLInputElement>(label);
       return [input.getAttribute('min'), input.getAttribute('max')];
     };
+    await more();
     expect(attrs('Year')).toEqual(['1', null]);
     expect(attrs('Day')).toEqual(['1', '426']);
     expect(attrs('Hour')).toEqual(['0', '5']);
@@ -127,6 +258,7 @@ describe('MissionForm', () => {
   });
 
   it('switches calendars', async () => {
+    await more();
     const earth = el.querySelector<HTMLInputElement>('input[type="radio"][value="earth"]')!;
     earth.click();
     await fixture.whenStable();
@@ -134,11 +266,4 @@ describe('MissionForm', () => {
     expect(el.textContent).toContain('0–23');
   });
 
-  it('disables the capture orbit altitude for a flyby', async () => {
-    const capture = control<HTMLInputElement>('Capture');
-    capture.click();
-    await fixture.whenStable();
-    expect(mission().capture).toBe(false);
-    expect(control<HTMLInputElement>('Capture orbit').disabled).toBe(true);
-  });
 });

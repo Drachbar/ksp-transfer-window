@@ -116,7 +116,15 @@
   <section class="step" aria-labelledby="step-arrive">
     <h3 id="step-arrive"><span class="step-number">{{ v.planeChange ? 4 : 3 }}</span> Arrive at {{ m.destination }}</h3>
     <p class="instruction" data-testid="instruction">
-      @if (m.capture) {
+      @if (v.aerobrake; as a) {
+        @if (a.fix) {
+          Aim your periapsis into {{ m.destination }}’s atmosphere and let drag slow you down: you reach the top of the
+          atmosphere at about <strong>{{ a.entrySpeed }}</strong>. Once captured, burn <strong>{{ a.fix }} prograde</strong> at
+          apoapsis to lift your periapsis out of the air into a {{ m.finalAltitudeKm }} km orbit.
+        } @else {
+          A {{ m.finalAltitudeKm }} km orbit is inside {{ m.destination }}’s atmosphere: choose a higher capture orbit to aerobrake into.
+        }
+      } @else if (m.capture) {
         At periapsis, burn <strong>{{ v.capture }}</strong> retrograde to capture into a {{ m.finalAltitudeKm }} km orbit around
         {{ m.destination }}.
       } @else {

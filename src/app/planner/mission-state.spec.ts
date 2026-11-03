@@ -15,6 +15,9 @@ const custom: Mission = {
   calendar: 'earth',
   maxFlightDays: 400,
   stayDays: 20,
+  aerobrake: true,
+  aerobrakeHome: false,
+  roundTrip: true,
 };
 
 describe('query parameters', () => {
@@ -41,6 +44,28 @@ describe('query parameters', () => {
     expect(restoreMission(shared, { maxFlightDays: 300 }).maxFlightDays).toBeNull();
     // A link with only some parameters leaves the rest to the last visit.
     expect(restoreMission(missionFromQueryParams(params({ to: 'Eve' })), { maxFlightDays: 300 }).maxFlightDays).toBe(300);
+  });
+
+  it('writes aerobraking only when it is on, and a shared link without it means off', () => {
+    expect(missionToQueryParams(custom)['aero']).toBe('1');
+    expect('aero' in missionToQueryParams(DEFAULT_MISSION)).toBe(false);
+    expect(restoreMission(missionFromQueryParams(params(missionToQueryParams(DEFAULT_MISSION))), { aerobrake: true }).aerobrake).toBe(false);
+  });
+
+  it('writes aerobraking at home only when it is off (it is on by default)', () => {
+    expect(missionToQueryParams(custom)['aerohome']).toBe('0');
+    expect('aerohome' in missionToQueryParams(DEFAULT_MISSION)).toBe(false);
+  });
+
+  it('reads old links, where "aero" meant aerobraking at both ends', () => {
+    expect(restoreMission(missionFromQueryParams(params({ from: 'Kerbin', to: 'Duna', aero: '1' })))).toMatchObject({ aerobrake: true, aerobrakeHome: true });
+  });
+
+  it('writes a round trip only when one is planned, and reads older links with a stay as one', () => {
+    expect(missionToQueryParams(custom)['trip']).toBe('round');
+    expect('trip' in missionToQueryParams(DEFAULT_MISSION)).toBe(false);
+    expect(restoreMission(missionFromQueryParams(params(missionToQueryParams(DEFAULT_MISSION))), { roundTrip: true }).roundTrip).toBe(false);
+    expect(restoreMission(missionFromQueryParams(params({ ...missionToQueryParams(DEFAULT_MISSION), stay: '10' }))).roundTrip).toBe(true);
   });
 
   it('writes the minimum stay only when there is one', () => {
