@@ -105,6 +105,21 @@ describe('MissionForm', () => {
     expect(control<HTMLInputElement>('Minimum stay').disabled).toBe(true);
   });
 
+  it('limits the number fields in the browser too (arrows and spinners stop at the limits)', async () => {
+    const attrs = (label: string) => {
+      const input = control<HTMLInputElement>(label);
+      return [input.getAttribute('min'), input.getAttribute('max')];
+    };
+    expect(attrs('Year')).toEqual(['1', null]);
+    expect(attrs('Day')).toEqual(['1', '426']);
+    expect(attrs('Hour')).toEqual(['0', '5']);
+    expect(attrs('Parking orbit')).toEqual(['0', null]);
+    el.querySelector<HTMLInputElement>('input[type="radio"][value="earth"]')!.click();
+    await fixture.whenStable();
+    expect(attrs('Day')).toEqual(['1', '365']);
+    expect(attrs('Hour')).toEqual(['0', '23']);
+  });
+
   it('explains invalid input', async () => {
     await enter(control<HTMLInputElement>('Day'), '500');
     expect(el.textContent).toContain('Day must be between 1 and 426');

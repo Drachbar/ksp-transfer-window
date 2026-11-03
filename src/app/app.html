@@ -1,7 +1,13 @@
 <header class="site-header">
   <div class="container">
-    <h1>KSP Transfer Window</h1>
-    <p class="tagline">When to burn, and how, for interplanetary transfers in Kerbal Space Program</p>
+    <div class="brand">
+      <h1>KSP Transfer Window</h1>
+      <p class="tagline">When to burn, and how: planning tools for Kerbal Space Program</p>
+    </div>
+    <nav aria-label="Main">
+      <a routerLink="/" routerLinkActive="active" ariaCurrentWhenActive="page" [routerLinkActiveOptions]="startPage">Transfer windows</a>
+      <a routerLink="/satellites" routerLinkActive="active" ariaCurrentWhenActive="page" [routerLinkActiveOptions]="page">Satellites</a>
+    </nav>
   </div>
 </header>
 

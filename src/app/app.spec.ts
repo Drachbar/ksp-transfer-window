@@ -4,6 +4,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { App } from './app';
 import { routes } from './app.routes';
 import { Planner } from './planner/planner/planner';
+import { SatellitesPage } from './satellites/satellites-page/satellites-page';
 import { WindowSearch } from './search/window-search';
 
 describe('App', () => {
@@ -35,5 +36,32 @@ describe('App', () => {
     const harness = await RouterTestingHarness.create();
     const planner = await harness.navigateByUrl('/', Planner);
     expect(planner).toBeInstanceOf(Planner);
+  });
+
+  it('links to every page from the header', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const links = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('header nav a'));
+    expect(links.map((a) => [a.textContent!.trim(), a.getAttribute('href')])).toEqual([
+      ['Transfer windows', '/'],
+      ['Satellites', '/satellites'],
+    ]);
+  });
+
+  it('shows the satellite calculator on its own page', async () => {
+    const harness = await RouterTestingHarness.create();
+    const page = await harness.navigateByUrl('/satellites', SatellitesPage);
+    expect(page).toBeInstanceOf(SatellitesPage);
+  });
+
+  it('marks the current page in the header, whatever the query parameters', async () => {
+    const harness = await RouterTestingHarness.create();
+    const app = TestBed.createComponent(App);
+    await harness.navigateByUrl('/?from=Kerbin&to=Duna');
+    await app.whenStable();
+    expect(Array.from((app.nativeElement as HTMLElement).querySelectorAll('nav a.active')).map((a) => a.textContent!.trim())).toEqual(['Transfer windows']);
+    await harness.navigateByUrl('/satellites?body=Duna');
+    await app.whenStable();
+    expect(Array.from((app.nativeElement as HTMLElement).querySelectorAll('nav a.active')).map((a) => a.textContent!.trim())).toEqual(['Satellites']);
   });
 });

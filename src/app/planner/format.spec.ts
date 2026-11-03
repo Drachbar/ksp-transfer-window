@@ -1,4 +1,4 @@
-import { describeBurn, formatAngle, formatDeltaV, formatSignedDeltaV } from './format';
+import { describeBurn, formatAngle, formatDeltaV, formatDistance, formatSignedDeltaV } from './format';
 
 describe('format', () => {
   it('formats Δv in whole m/s with thousands separators', () => {
@@ -32,5 +32,20 @@ describe('describeBurn', () => {
   it('leaves out components that round to zero', () => {
     expect(describeBurn(1441, 0.3)).toBe('1,441 m/s prograde');
     expect(describeBurn(0.2, 80)).toBe('80 m/s normal');
+  });
+});
+
+describe('formatDistance', () => {
+  it('uses kilometres up to a million, with one decimal at most', () => {
+    expect(formatDistance(2_863_334.5)).toBe('2,863.3 km');
+    expect(formatDistance(5e6)).toBe('5,000 km');
+    expect(formatDistance(357.9e3)).toBe('357.9 km');
+    expect(formatDistance(120_000e3)).toBe('120,000 km');
+  });
+
+  it('switches to gigametres for interplanetary distances, like KSP', () => {
+    expect(formatDistance(2e9)).toBe('2 Gm');
+    expect(formatDistance(15e9)).toBe('15 Gm');
+    expect(formatDistance(82.4e9)).toBe('82.4 Gm');
   });
 });

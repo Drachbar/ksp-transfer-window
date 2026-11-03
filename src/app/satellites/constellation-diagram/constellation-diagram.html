@@ -1,0 +1,23 @@
+@let l = layout();
+<svg viewBox="-115 -115 230 230" role="img" [attr.aria-label]="label()">
+  <title>{{ label() }}</title>
+
+  @if (l.atmosphereRadius > l.bodyRadius) {
+    <circle class="atmosphere" cx="0" cy="0" [attr.r]="l.atmosphereRadius" />
+  }
+  <circle class="body" cx="0" cy="0" [attr.r]="l.bodyRadius" />
+  <text class="body-name" x="0" y="4" text-anchor="middle">{{ body().name }}</text>
+
+  <circle class="target" cx="0" cy="0" [attr.r]="l.targetRadius" />
+  <ellipse class="deployment" [attr.cx]="l.ellipse.cx" [attr.cy]="l.ellipse.cy" [attr.rx]="l.ellipse.rx" [attr.ry]="l.ellipse.ry" />
+
+  @for (s of l.satellites; track $index) {
+    <circle data-testid="satellite" class="satellite" [attr.cx]="s.x" [attr.cy]="s.y" r="4" />
+  }
+  <circle class="release" [attr.cx]="l.release.x" [attr.cy]="l.release.y" r="7" />
+  <text class="caption" x="10" [attr.y]="l.release.y - 8">Release at {{ constellation().releaseAt }}</text>
+</svg>
+<p class="legend">
+  <span><span class="swatch target-swatch"></span> Final orbit</span>
+  <span><span class="swatch deployment-swatch"></span> Carrier’s deployment orbit</span>
+</p>

@@ -33,3 +33,10 @@ export function describeBurn(prograde: number, normal: number): string {
   };
   return [part(prograde, 'prograde', 'retrograde'), part(normal, 'normal', 'anti-normal')].filter(Boolean).join(' and ');
 }
+
+const oneDecimal = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
+
+/** "2,863.3 km", or "15 Gm" from a billion metres up. */
+export function formatDistance(metres: number): string {
+  return metres >= 1e9 ? `${oneDecimal.format(metres / 1e9)} Gm` : `${oneDecimal.format(metres / 1e3)} km`;
+}

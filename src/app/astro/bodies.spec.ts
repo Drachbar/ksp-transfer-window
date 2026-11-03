@@ -104,4 +104,16 @@ describe('bodies', () => {
     expect(bodiesOrbiting(BODIES.Kerbol).map((b) => b.name)).toEqual(['Moho', 'Eve', 'Kerbin', 'Duna', 'Dres', 'Jool', 'Eeloo']);
     expect(bodiesOrbiting(BODIES.Mun)).toEqual([]);
   });
+
+  it('uses the sidereal rotation period for Kerbin (the original had the 6-hour solar day)', () => {
+    expect(BODIES.Kerbin.siderealRotation).toBe(21549.425);
+  });
+
+  it('knows the height of each atmosphere', () => {
+    const heights = Object.fromEntries(BODY_NAMES.map((n) => [n, BODIES[n].atmosphereHeight]));
+    expect(heights).toEqual({
+      Kerbol: 600e3, Moho: 0, Eve: 90e3, Gilly: 0, Kerbin: 70e3, Mun: 0, Minmus: 0, Duna: 50e3, Ike: 0,
+      Dres: 0, Jool: 200e3, Laythe: 50e3, Vall: 0, Tylo: 0, Bop: 0, Pol: 0, Eeloo: 0,
+    });
+  });
 });

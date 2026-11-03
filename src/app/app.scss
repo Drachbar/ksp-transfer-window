@@ -14,6 +14,14 @@
 .site-header {
   padding: 1.5rem 0 1.25rem;
 
+  .container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
+  }
+
   h1 {
     margin: 0;
     font-size: 1.6rem;
@@ -43,5 +51,27 @@ main {
 
   a {
     color: inherit;
+  }
+}
+
+nav {
+  display: flex;
+  gap: 0.25rem;
+
+  a {
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 600;
+
+    &:hover {
+      color: var(--text);
+    }
+
+    &.active {
+      background: var(--accent-bg);
+      color: var(--accent);
+    }
   }
 }

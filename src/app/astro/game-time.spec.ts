@@ -1,4 +1,4 @@
-import { addDays, EARTH_CALENDAR, formatDate, formatDuration, formatFlightTime, formatShortDate, fromGameDate, KERBIN_CALENDAR, toGameDate } from './game-time';
+import { addDays, EARTH_CALENDAR, formatDate, formatPeriod, formatDuration, formatFlightTime, formatShortDate, fromGameDate, KERBIN_CALENDAR, toGameDate } from './game-time';
 
 const KDAY = 6 * 3600;
 const KYEAR = 426 * KDAY;
@@ -71,6 +71,19 @@ describe('game time', () => {
     it('adds hours to short flights', () => {
       expect(formatFlightTime(5 * KDAY + 2 * 3600, KERBIN_CALENDAR)).toBe('5d 2h');
       expect(formatFlightTime(4 * 3600 + 30 * 60, KERBIN_CALENDAR)).toBe('4h 30m');
+    });
+  });
+
+  describe('formatPeriod', () => {
+    it('shows orbital periods to the hundredth of a second, so a deployment orbit can be matched exactly', () => {
+      expect(formatPeriod(21549.425, KERBIN_CALENDAR)).toBe('5h 59m 9.43s');
+      expect(formatPeriod(14366.283, KERBIN_CALENDAR)).toBe('3h 59m 26.28s');
+      expect(formatPeriod(42, KERBIN_CALENDAR)).toBe('42.00s');
+      expect(formatPeriod(59.996, KERBIN_CALENDAR)).toBe('1m 0.00s'); // rounds up into the next minute
+    });
+
+    it('includes days for long periods, keeping the smaller units', () => {
+      expect(formatPeriod(2 * KDAY + 65.5, KERBIN_CALENDAR)).toBe('2d 0h 1m 5.50s');
     });
   });
 

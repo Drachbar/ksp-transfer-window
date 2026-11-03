@@ -3,7 +3,7 @@
 import { BODIES, bodiesOrbiting, type BodyName, type CelestialBody } from '../astro/bodies';
 import { EARTH_CALENDAR, fromGameDate, KERBIN_CALENDAR, toGameDate, type Calendar } from '../astro/game-time';
 import type { TransferWindow } from '../search/window-finder';
-import { disabled, schema, validate, type SchemaPath } from '@angular/forms/signals';
+import { disabled, max, min, schema, validate, type SchemaPath } from '@angular/forms/signals';
 import type { WindowSearchRequest } from '../search/window-search-protocol';
 
 export type CalendarName = 'kerbin' | 'earth';
@@ -91,17 +91,17 @@ export function toSearchRequest(m: Mission): WindowSearchRequest {
   };
 }
 
-/** A number field that must be filled in and lie in [min, max]. */
-function between(path: SchemaPath<number>, label: string, min: number, max: (calendar: Calendar) => number, calendarPath: SchemaPath<CalendarName>) {
-  validate(path, ({ value, valueOf }) => {
-    const v = value();
-    if (typeof v !== 'number' || !Number.isFinite(v)) return { kind: 'required', message: `${label} is required` };
-    const hi = max(calendarOf({ calendar: valueOf(calendarPath) }));
-    if (v < min || v > hi) {
-      return { kind: 'range', message: hi === Infinity ? `${label} must be at least ${min}` : `${label} must be between ${min} and ${hi}` };
-    }
-    return undefined;
-  });
+/**
+ * A number field that must be filled in and lie in [lo, hi]. Uses the min/max validators so the
+ * browser's number input gets the limits too (its arrows stop there).
+ */
+function between(path: SchemaPath<number>, label: string, lo: number, hi: ((calendar: Calendar) => number) | null, calendarPath: SchemaPath<CalendarName>) {
+  validate(path, ({ value }) => (Number.isFinite(value()) ? undefined : { kind: 'required', message: `${label} is required` }));
+  const limit = (valueOf: <T>(p: SchemaPath<T>) => T) => hi!(calendarOf({ calendar: valueOf(calendarPath) }));
+  const message = ({ valueOf }: { valueOf: <T>(p: SchemaPath<T>) => T }) =>
+    hi ? `${label} must be between ${lo} and ${limit(valueOf)}` : `${label} must be at least ${lo}`;
+  min(path, lo, { message });
+  if (hi) max(path, ({ valueOf }) => limit(valueOf), { message });
 }
 
 /**
@@ -128,11 +128,11 @@ export function returnMission(m: Mission, outbound: TransferWindow): Mission {
 }
 
 export const missionSchema = schema<Mission>((p) => {
-  between(p.year, 'Year', 1, () => Infinity, p.calendar);
+  between(p.year, 'Year', 1, null, p.calendar);
   between(p.day, 'Day', 1, (c) => c.daysPerYear, p.calendar);
   between(p.hour, 'Hour', 0, (c) => c.hoursPerDay - 1, p.calendar);
-  between(p.initialAltitudeKm, 'Altitude', 0, () => Infinity, p.calendar);
-  between(p.finalAltitudeKm, 'Altitude', 0, () => Infinity, p.calendar);
+  between(p.initialAltitudeKm, 'Altitude', 0, null, p.calendar);
+  between(p.finalAltitudeKm, 'Altitude', 0, null, p.calendar);
   disabled(p.finalAltitudeKm, ({ valueOf }) => !valueOf(p.capture));
   disabled(p.stayDays, ({ valueOf }) => !valueOf(p.capture));
   validate(p.stayDays, ({ value }) => {

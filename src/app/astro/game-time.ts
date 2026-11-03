@@ -90,3 +90,19 @@ export function addDays(date: { year: number; day: number }, days: number, calen
   const total = (date.year - 1) * calendar.daysPerYear + (date.day - 1) + days;
   return { year: Math.floor(total / calendar.daysPerYear) + 1, day: (total % calendar.daysPerYear) + 1 };
 }
+
+/** Orbital period to the hundredth of a second, e.g. "5h 59m 9.43s" or "2d 0h 1m 5.50s". */
+export function formatPeriod(t: number, calendar: Calendar): string {
+  // Round first (so 59.996 s becomes 1m 0.00s), nudging past binary representation error
+  // (21549.425 is stored as 21549.42499…).
+  const rounded = Math.round(t * 100 + 1e-6) / 100;
+  const whole = split(rounded, calendar);
+  const seconds = (rounded - Math.floor(rounded) + whole.second).toFixed(2);
+  const parts: string[] = [];
+  const days = whole.year * calendar.daysPerYear + whole.day;
+  if (days > 0) parts.push(`${days}d`);
+  if (parts.length || whole.hour > 0) parts.push(`${whole.hour}h`);
+  if (parts.length || whole.minute > 0) parts.push(`${whole.minute}m`);
+  parts.push(`${seconds}s`);
+  return parts.join(' ');
+}

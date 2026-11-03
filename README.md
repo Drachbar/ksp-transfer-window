@@ -25,6 +25,11 @@ Live at **<https://ksp.findersson.se>** and **<https://drachbar.github.io/ksp-tr
   minimum stay), with the round-trip Δv and the full burn details for the return.
 - **Porkchop plot** of every departure date and flight time around a window;
   click any point to see that transfer in detail.
+- **Satellite networks** (separate page): stationary orbits ("keostationary"
+  around Kerbin, as contracts call them) or any altitude, a resonant deployment plan for N evenly spaced
+  satellites (burns for the carrier and for each satellite), the lowest altitude
+  with line of sight between them, and a CommNet range check using the antenna
+  power ratings from the game's part files.
 - Kerbin or Earth calendar, optional maximum flight time, flybys without a
   capture burn.
 - Shareable links (the search is in the URL) and the last mission is remembered.
@@ -64,7 +69,8 @@ npm run build             # production build in dist/
 | --- | --- |
 | `src/app/astro/` | Orbital mechanics in plain TypeScript (no Angular): vectors, quaternions, root finding, Lambert's problem, Keplerian orbits, the stock bodies, transfers. |
 | `src/app/search/` | Porkchop grid, transfer window finder and the Web Workers that run them (independent searches run in parallel, one worker each). |
-| `src/app/planner/` | The UI: mission form, window card, diagrams, window list and porkchop plot. |
+| `src/app/planner/` | The transfer planner page: mission form, window card, diagrams, window list, destination overview and porkchop plot. |
+| `src/app/satellites/` | The satellite network page: synchronous orbits, resonant deployment, CommNet range. |
 | `src/testing/legacy/` | Reference results recorded from the original JavaScript. |
 | `scripts/generate-legacy-fixtures.mjs` | Regenerates those reference results by running `legacy/javascripts/` in Node. |
 | `legacy/` | The original application (CoffeeScript sources and compiled JavaScript). |
@@ -75,6 +81,8 @@ The port reproduces the original results to the last bit, except where a bug
 was fixed deliberately (each is covered by a test):
 
 - The Lambert solver reported a `NaN` transfer angle for hyperbolic transfers.
+- Kerbin's rotation period is the sidereal 21,549.425 s (the original had the
+  6-hour solar day), which puts its synchronous orbit at the correct 2,863.33 km.
 - The ejection refinement ("refine transfer") can diverge when the ejection
   inclination is close to 0°. The window finder only accepts a refined result
   that stays within 3 % of the estimate and otherwise reports the estimate.

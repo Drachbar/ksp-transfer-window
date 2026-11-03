@@ -1,0 +1,83 @@
+:host {
+  display: block;
+}
+
+svg {
+  display: block;
+  width: 100%;
+  max-width: 340px;
+  height: auto;
+  margin-inline: auto;
+  font-family: inherit;
+}
+
+.atmosphere {
+  fill: var(--accent-bg);
+}
+
+.body {
+  fill: var(--planet);
+}
+
+.body-name {
+  fill: var(--on-planet);
+  font-size: 8px;
+  font-weight: 600;
+}
+
+.target {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.deployment {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 3;
+}
+
+.satellite {
+  fill: var(--accent);
+  stroke: var(--surface);
+  stroke-width: 1.5;
+}
+
+.release {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.2;
+}
+
+.caption {
+  fill: var(--text);
+  font-size: 9px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem 1rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+}
+
+.swatch {
+  display: inline-block;
+  width: 18px;
+  height: 0;
+  border-top: 2px solid var(--accent);
+
+  &.deployment-swatch {
+    border-top: 2px dashed var(--text-muted);
+  }
+}
