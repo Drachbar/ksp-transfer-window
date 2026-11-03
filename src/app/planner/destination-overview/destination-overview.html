@@ -1,0 +1,37 @@
+<div class="table-wrap">
+  <table>
+    <caption class="sr-only">Next transfer window to each destination from {{ mission().origin }}</caption>
+    <thead>
+      <tr>
+        <th scope="col">Destination</th>
+        <th scope="col">Next window</th>
+        <th scope="col" class="num">Total Δv</th>
+        <th scope="col" class="num">Flight</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row.destination) {
+        <tr [attr.aria-current]="row.current ? 'true' : null" [class.current]="row.current">
+          <th scope="row">
+            <button type="button" (click)="choose.emit(row.destination)" [attr.aria-label]="'Plan a trip to ' + row.destination">
+              {{ row.destination }}
+            </button>
+          </th>
+          @switch (row.state) {
+            @case ('searching') {
+              <td colspan="3" class="muted">Searching…</td>
+            }
+            @case ('none') {
+              <td colspan="3" class="muted">No window found</td>
+            }
+            @case ('found') {
+              <td>{{ row.departure }} <span class="muted">{{ row.wait }}</span></td>
+              <td class="num">{{ row.deltaV }}</td>
+              <td class="num">{{ row.flightTime }}</td>
+            }
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

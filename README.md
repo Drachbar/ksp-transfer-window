@@ -12,6 +12,8 @@ Live at **<https://ksp.findersson.se>** and **<https://drachbar.github.io/ksp-tr
 
 - **Upcoming windows** from the current game date, with a "leave now or wait?"
   comparison, for every pair of planets and for moons of the same planet.
+- **All destinations at a glance**: the next window and its Δv to every body you
+  can fly to from where you are.
 - **The ejection burn as manoeuvre node values** (prograde/normal Δv) and a
   diagram of where on your parking orbit to burn.
 - **Solar system view** with the origin at the bottom, showing where everything
@@ -61,7 +63,7 @@ npm run build             # production build in dist/
 | Path | What |
 | --- | --- |
 | `src/app/astro/` | Orbital mechanics in plain TypeScript (no Angular): vectors, quaternions, root finding, Lambert's problem, Keplerian orbits, the stock bodies, transfers. |
-| `src/app/search/` | Porkchop grid, transfer window finder and the Web Worker that runs them. |
+| `src/app/search/` | Porkchop grid, transfer window finder and the Web Workers that run them (independent searches run in parallel, one worker each). |
 | `src/app/planner/` | The UI: mission form, window card, diagrams, window list and porkchop plot. |
 | `src/testing/legacy/` | Reference results recorded from the original JavaScript. |
 | `scripts/generate-legacy-fixtures.mjs` | Regenerates those reference results by running `legacy/javascripts/` in Node. |

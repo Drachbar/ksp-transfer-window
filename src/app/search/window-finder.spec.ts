@@ -1,4 +1,4 @@
-import { describeTransfer, findTransferWindows, type WindowSearchParams, type WindowSearchResult } from './window-finder';
+import { attachPlaneChangeAlternatives, describeTransfer, findTransferWindows, nextBestWindow, type TransferWindow, type WindowSearchParams, type WindowSearchResult } from './window-finder';
 import { defaultSearchRanges } from './ranges';
 import { transfer } from '../astro/transfer';
 import { Orbit } from '../astro/orbit';
@@ -219,5 +219,35 @@ describe('findTransferWindows', () => {
     findTransferWindows({ ...paramsFor('Kerbin', 'Duna', 0, 1), resolution: { departuresPerSynodicPeriod: 20, timesOfFlight: 20 } }, (f) => progress.push(f));
     expect(progress.at(-1)).toBe(1);
     expect([...progress].sort((a, b) => a - b)).toEqual(progress);
+  });
+
+  describe('attachPlaneChangeAlternatives', () => {
+    const S = 1000;
+    const w = (departureTime: number, deltaV: number, planeChangeDeltaV = 0) =>
+      ({ departureTime, deltaV, transfer: { planeChangeDeltaV } }) as unknown as TransferWindow;
+
+    it('attaches the cheapest nearby plane-change transfer that saves more than 10 %', () => {
+      const windows = [w(0, 1000), w(1000, 1000)];
+      const alternatives = [w(50, 850, 10), w(80, 880, 10), w(1100, 950, 10), w(2000, 500, 10)];
+      const [first, second] = attachPlaneChangeAlternatives(windows, alternatives, S);
+      expect(first.planeChangeAlternative).toBe(alternatives[0]);
+      expect(second.planeChangeAlternative).toBeUndefined(); // only 5 % cheaper; the 500 m/s one is too far away
+    });
+
+    it('ignores alternatives without a plane change', () => {
+      const [first] = attachPlaneChangeAlternatives([w(0, 1000)], [w(10, 500, 0)], S);
+      expect(first.planeChangeAlternative).toBeUndefined();
+    });
+  });
+
+  describe('nextBestWindow', () => {
+    const w = (deltaV: number) => ({ deltaV }) as TransferWindow;
+
+    it('is the first window, unless leaving now is cheaper', () => {
+      expect(nextBestWindow({ windows: [w(100), w(50)], departNow: w(200) })).toEqual(w(100));
+      expect(nextBestWindow({ windows: [w(100)], departNow: w(90) })).toEqual(w(90));
+      expect(nextBestWindow({ windows: [], departNow: w(90) })).toEqual(w(90));
+      expect(nextBestWindow({ windows: [], departNow: null })).toBeNull();
+    });
   });
 });

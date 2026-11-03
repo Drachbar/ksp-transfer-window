@@ -24,6 +24,11 @@ describe('toSearchParams', () => {
     expect(p.windowCount).toBe(2);
   });
 
+  it('can switch off the plane-change suggestions', () => {
+    expect(toSearchParams({ ...request, suggestPlaneChange: false }).suggestPlaneChange).toBe(false);
+    expect(toSearchParams(request).suggestPlaneChange).toBeUndefined();
+  });
+
   it('passes on a maximum time of flight', () => {
     expect(toSearchParams({ ...request, maxTimeOfFlight: 1e7 }).maxTimeOfFlight).toBe(1e7);
   });

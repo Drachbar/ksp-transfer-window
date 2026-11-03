@@ -5,12 +5,15 @@ import { loadStoredMission, MISSION_STORAGE, missionFromQueryParams, missionToQu
 import { MissionForm } from '../mission-form/mission-form';
 import { WindowCard, type ReturnTrip } from '../window-card/window-card';
 import { WindowList } from '../window-list/window-list';
+import { DestinationOverview } from '../destination-overview/destination-overview';
 import { PorkchopPlot, type PorkchopPick } from '../porkchop-plot/porkchop-plot';
 import { calendarOf, missionSchema, nowOf, returnMission, toSearchRequest, type Mission } from '../mission';
 import { formatDeltaV } from '../format';
 import { formatDate, formatDuration, formatFlightTime } from '../../astro/game-time';
 import { WindowSearch } from '../../search/window-search';
-import { describeTransfer, type TransferWindow, type WindowSearchResult } from '../../search/window-finder';
+import { attachPlaneChangeAlternatives, describeTransfer, nextBestWindow, type TransferWindow, type WindowSearchResult } from '../../search/window-finder';
+import { synodicPeriod } from '../../search/ranges';
+import { BODIES, type BodyName } from '../../astro/bodies';
 import { toSearchParams } from '../../search/window-search-protocol';
 
 /** How long to wait after the last change before searching (ms). */
@@ -37,7 +40,7 @@ const isAbort = (e: unknown) => e instanceof DOMException && e.name === 'AbortEr
 
 @Component({
   selector: 'app-planner',
-  imports: [MissionForm, WindowCard, WindowList, PorkchopPlot],
+  imports: [MissionForm, WindowCard, WindowList, PorkchopPlot, DestinationOverview],
   templateUrl: './planner.html',
   styleUrl: './planner.scss',
 })
@@ -73,6 +76,10 @@ export class Planner {
   private readonly pickedMission = signal<Mission | null>(null);
   /** The way home from the window that is shown. */
   private readonly returnTrip = signal<ReturnTrip | null>(null);
+  /** The window to plan the way home from; only changes when the transfer does (not when tips are added). */
+  private readonly outbound = computed(() => (this.pickedMission() ? null : (this.selectedWindow() ?? null)), {
+    equal: (a, b) => a === b || (!!a && !!b && a.departureTime === b.departureTime && a.timeOfFlight === b.timeOfFlight),
+  });
 
   protected readonly cardMission = computed(() => this.pickedMission() ?? this.resultMission());
   /** The trip home waits from your arrival, not from today. */
@@ -80,6 +87,7 @@ export class Planner {
   /** No "return" step on the trip home itself. */
   protected readonly cardReturnTrip = computed(() => (this.pickedMission() ? null : this.returnTrip()));
   protected readonly showPlot = signal(false);
+  protected readonly showOverview = signal(false);
 
   protected readonly narrow = inject(NARROW_SCREEN);
   /** On a narrow screen the form folds away once there are results; this opens it again. */
@@ -156,7 +164,7 @@ export class Planner {
 
     // Look for the way home from the window that is shown.
     effect((onCleanup) => {
-      const outbound = this.pickedMission() ? null : this.selectedWindow();
+      const outbound = this.outbound();
       const mission = this.resultMission();
       if (!outbound || !mission.capture) {
         this.returnTrip.set(null);
@@ -167,13 +175,10 @@ export class Planner {
       const home = returnMission(mission, outbound);
       this.returnTrip.set({ state: 'searching' });
       this.windowSearch
-        .search({ ...toSearchRequest(home), windowCount: RETURN_WINDOW_COUNT }, undefined, 'return')
+        .search({ ...toSearchRequest(home), windowCount: RETURN_WINDOW_COUNT, suggestPlaneChange: false }, undefined, 'return')
         .then((r) => {
           if (stale) return;
-          // Leaving straight away beats the first window when it is cheaper (a window is open on arrival).
-          const now = r.departNow;
-          const next = r.windows[0];
-          const best = now && (!next || now.deltaV < next.deltaV) ? now : next;
+          const best = nextBestWindow(r);
           this.returnTrip.set(best ? { state: 'found', window: best, mission: home } : { state: 'none' });
         })
         .catch((e) => {
@@ -186,9 +191,19 @@ export class Planner {
     this.remember(mission);
     this.progress.set(0);
     this.error.set(null);
+    const request = toSearchRequest(mission);
+    // Plane-change alternatives take a few times longer than the windows themselves: look for them
+    // in a second worker at the same time, and add the tips to the windows when they arrive.
+    const alternatives = this.windowSearch.search(
+      { ...request, transferType: 'optimal', windowCount: (request.windowCount ?? 5) + 2, suggestPlaneChange: false },
+      undefined,
+      'planeChange',
+    );
+    alternatives.catch(() => {}); // a failure only means no tips
     try {
-      const result = await this.windowSearch.search(toSearchRequest(mission), (f) => this.progress.set(f));
+      const result = await this.windowSearch.search({ ...request, suggestPlaneChange: false }, (f) => this.progress.set(f));
       this.result.set(result);
+      void this.addPlaneChangeTips(result, alternatives, mission);
       this.resultMission.set(mission);
       this.selected.set(0);
       this.picked.set(null);
@@ -198,6 +213,17 @@ export class Planner {
       if (isAbort(e)) return; // superseded by a newer search
       this.progress.set(null);
       this.error.set(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  private async addPlaneChangeTips(result: WindowSearchResult, alternatives: Promise<WindowSearchResult>, mission: Mission) {
+    try {
+      const { windows } = await alternatives;
+      if (this.result() !== result) return; // a newer search has replaced these windows
+      const S = synodicPeriod(BODIES[mission.origin], BODIES[mission.destination]);
+      this.result.set({ ...result, windows: attachPlaneChangeAlternatives(result.windows, windows, S) });
+    } catch {
+      // No tips then.
     }
   }
 
@@ -226,6 +252,11 @@ export class Planner {
     this.pickedLabel.set(`Return to ${trip.mission.destination}`);
     this.pickedMission.set(trip.mission);
     this.picked.set(trip.window);
+  }
+
+  protected chooseDestination(destination: BodyName) {
+    this.missionForm.destination().value.set(destination);
+    this.showCard();
   }
 
   protected showCard() {

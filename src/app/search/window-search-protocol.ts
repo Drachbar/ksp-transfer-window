@@ -20,6 +20,8 @@ export interface WindowSearchRequest {
   windowCount?: number;
   /** Longest acceptable time of flight (s). */
   maxTimeOfFlight?: number;
+  /** Set to false to skip the (slower) search for plane-change alternatives. */
+  suggestPlaneChange?: boolean;
 }
 
 /** A porkchop grid over the given departure times and the default time-of-flight range. */
@@ -75,6 +77,7 @@ export function toSearchParams(request: WindowSearchRequest): WindowSearchParams
     transferType: request.transferType ?? 'ballistic',
     windowCount: request.windowCount,
     maxTimeOfFlight: request.maxTimeOfFlight,
+    suggestPlaneChange: request.suggestPlaneChange,
   };
 }
 

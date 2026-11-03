@@ -143,14 +143,28 @@ export function findTransferWindows(
   );
 
   const S = synodicPeriod(params.origin, params.destination);
-  const withAlternative = (w: TransferWindow): TransferWindow => {
+  return { windows: attachPlaneChangeAlternatives(result.windows, alternatives, S), departNow: result.departNow };
+}
+
+/**
+ * Gives each ballistic window the cheapest plane-change transfer departing within
+ * 0.3 synodic periods of it, if that saves more than 10 %.
+ */
+export function attachPlaneChangeAlternatives(windows: TransferWindow[], alternatives: TransferWindow[], synodicPeriod: number): TransferWindow[] {
+  return windows.map((w) => {
     const best = alternatives
-      .filter((a) => a.transfer.planeChangeDeltaV > 0 && Math.abs(a.departureTime - w.departureTime) < 0.3 * S)
+      .filter((a) => a.transfer.planeChangeDeltaV > 0 && Math.abs(a.departureTime - w.departureTime) < 0.3 * synodicPeriod)
       .filter((a) => a.deltaV < (1 - MIN_PLANE_CHANGE_SAVING) * w.deltaV)
       .sort((a, b) => a.deltaV - b.deltaV)[0];
     return best ? { ...w, planeChangeAlternative: best } : w;
-  };
-  return { windows: result.windows.map(withAlternative), departNow: result.departNow };
+  });
+}
+
+/** The first window, or leaving right now when that is cheaper (a window that is already open). */
+export function nextBestWindow(result: WindowSearchResult): TransferWindow | null {
+  const [next] = result.windows;
+  const now = result.departNow;
+  return now && (!next || now.deltaV < next.deltaV) ? now : (next ?? null);
 }
 
 function searchWindows(

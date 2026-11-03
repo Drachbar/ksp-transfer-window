@@ -86,6 +86,21 @@
           <p class="empty">No transfer windows found for this route.</p>
         }
 
+        <section aria-labelledby="overview-heading">
+          <div class="section-header">
+            <h2 id="overview-heading" class="panel-title">All destinations from {{ resultMission().origin }}</h2>
+            <button type="button" class="link-button" [attr.aria-expanded]="showOverview()" (click)="showOverview.set(!showOverview())">
+              {{ showOverview() ? 'Hide' : 'Compare all destinations' }}
+            </button>
+          </div>
+          @if (showOverview()) {
+            <app-destination-overview [mission]="resultMission()" (choose)="chooseDestination($event)" />
+            <p class="empty overview-note">With your current orbits and flight time limit. Choose a destination to plan the trip.</p>
+          } @else {
+            <p class="empty">The next window and its Δv for every place you can fly to from here.</p>
+          }
+        </section>
+
         @if (listWindow(); as center) {
           <section class="panel-flat" aria-labelledby="porkchop-heading">
             <div class="section-header">

@@ -25,13 +25,18 @@ class FakeWindowSearch {
   calls: PendingSearch[] = [];
   /** Searches for the way home (slot 'return'). */
   returnCalls: PendingSearch[] = [];
+  /** Searches for plane-change alternatives (slot 'planeChange'). */
+  planeChangeCalls: PendingSearch[] = [];
+  /** Searches for the destination overview (slots 'overview:…'). */
+  overviewCalls: PendingSearch[] = [];
   porkchopRequests: unknown[] = [];
   porkchop(request: unknown) {
     this.porkchopRequests.push(request);
     return new Promise<never>(() => {});
   }
   search(request: WindowSearchRequest, onProgress?: (f: number) => void, slot = 'windows') {
-    const list = slot === 'return' ? this.returnCalls : this.calls;
+    const list =
+      slot === 'return' ? this.returnCalls : slot === 'planeChange' ? this.planeChangeCalls : slot.startsWith('overview:') ? this.overviewCalls : this.calls;
     return new Promise<WindowSearchResult>((resolve, reject) => list.push({ request, onProgress, resolve, reject }));
   }
 }
@@ -71,7 +76,7 @@ describe('Planner', () => {
 
   it('searches for the default mission straight away', () => {
     expect(search.calls.length).toBe(1);
-    expect(search.calls[0].request).toEqual(toSearchRequest(DEFAULT_MISSION));
+    expect(search.calls[0].request).toEqual({ ...toSearchRequest(DEFAULT_MISSION), suggestPlaneChange: false });
   });
 
   it('shows progress while searching', async () => {
@@ -188,6 +193,77 @@ describe('Planner', () => {
     expect(list.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  describe('plane change suggestions', () => {
+    const w = result.windows[0];
+    const alternative = { ...w, departureTime: w.departureTime + 10 * 21600, deltaV: w.deltaV * 0.8, transfer: { ...w.transfer, planeChangeDeltaV: 200 } };
+
+    it('looks for them in parallel with the main search', () => {
+      expect(search.planeChangeCalls.length).toBe(1);
+      expect(search.planeChangeCalls[0].request).toEqual({
+        ...toSearchRequest(DEFAULT_MISSION),
+        transferType: 'optimal',
+        windowCount: toSearchRequest(DEFAULT_MISSION).windowCount! + 2,
+        suggestPlaneChange: false,
+      });
+    });
+
+    it('shows the windows without waiting for them', async () => {
+      await finishSearch();
+      expect(el.querySelector('app-window-card')).not.toBeNull();
+      expect(el.querySelector('[data-testid="plane-change-tip"]')).toBeNull();
+    });
+
+    it('adds the tip when the plane-change search finishes', async () => {
+      await finishSearch();
+      search.planeChangeCalls[0].resolve({ windows: [alternative], departNow: null });
+      await settle();
+      expect(el.querySelector('[data-testid="plane-change-tip"]')).not.toBeNull();
+    });
+
+    it('does not restart the search for the way home when the tip arrives', async () => {
+      await finishSearch();
+      const before = search.returnCalls.length;
+      search.planeChangeCalls[0].resolve({ windows: [alternative], departNow: null });
+      await settle();
+      expect(search.returnCalls.length).toBe(before);
+    });
+
+    it('stays quiet when the plane-change search fails', async () => {
+      await finishSearch();
+      search.planeChangeCalls[0].reject(new Error('worker died'));
+      await settle();
+      expect(el.querySelector('[role="alert"]')).toBeNull();
+      expect(el.querySelector('app-window-card')).not.toBeNull();
+    });
+  });
+
+  describe('all destinations', () => {
+    const openOverview = async () => {
+      await finishSearch();
+      Array.from(el.querySelectorAll('button')).find((b) => b.textContent!.includes('Compare all destinations'))!.click();
+      await settle();
+    };
+
+    it('is only searched when asked for', async () => {
+      await finishSearch();
+      expect(el.querySelector('app-destination-overview')).toBeNull();
+      expect(search.overviewCalls.length).toBe(0);
+      await openOverview();
+      expect(el.querySelector('app-destination-overview')).not.toBeNull();
+      expect(search.overviewCalls.length).toBe(6);
+    });
+
+    it('plans a trip to the destination you choose', async () => {
+      await openOverview();
+      search.overviewCalls.forEach((c) => c.resolve(result));
+      await settle();
+      el.querySelector<HTMLButtonElement>('app-destination-overview button[aria-label="Plan a trip to Jool"]')!.click();
+      await settle();
+      expect(search.calls.at(-1)!.request.destination).toBe('Jool');
+      expect(el.querySelector<HTMLSelectElement>('#mission-destination')!.value).toBe('Jool');
+    });
+  });
+
   describe('return trip', () => {
     const home = sampleResult().windows[1]; // stands in for a Duna → Kerbin window
     const homeResult = { windows: [home], departNow: null };
@@ -195,7 +271,11 @@ describe('Planner', () => {
     it('looks for the way home from the window that is shown', async () => {
       await finishSearch();
       expect(search.returnCalls.length).toBe(1);
-      expect(search.returnCalls[0].request).toEqual({ ...toSearchRequest(returnMission(DEFAULT_MISSION, result.windows[0])), windowCount: 3 });
+      expect(search.returnCalls[0].request).toEqual({
+        ...toSearchRequest(returnMission(DEFAULT_MISSION, result.windows[0])),
+        windowCount: 3,
+        suggestPlaneChange: false,
+      });
       expect(el.querySelector('[aria-labelledby="step-return"]')!.textContent).toMatch(/looking for/i);
     });
 
@@ -463,6 +543,6 @@ describe('Planner state', () => {
 
   it('copes with nonsense in the URL', async () => {
     await open('/?from=Narnia&day=banana');
-    expect(search.calls[0].request).toEqual(toSearchRequest(DEFAULT_MISSION));
+    expect(search.calls[0].request).toEqual({ ...toSearchRequest(DEFAULT_MISSION), suggestPlaneChange: false });
   });
 });
