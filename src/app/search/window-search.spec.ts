@@ -91,9 +91,11 @@ describe('WindowSearch', () => {
       const home = { ...request, origin: 'Duna' as const, destination: 'Kerbin' as const };
       const main = service.search(request);
       const firstReturn = service.search(home, undefined, 'return');
+      // Attach the expectation before awaiting anything else: the cancellation happens right away.
+      const firstCancelled = expect(firstReturn).rejects.toMatchObject({ name: 'AbortError' });
       const secondReturn = service.search(home, undefined, 'return');
+      await firstCancelled;
       await expect(main).resolves.toBeTruthy();
-      await expect(firstReturn).rejects.toMatchObject({ name: 'AbortError' });
       await expect(secondReturn).resolves.toBeTruthy();
     });
 
