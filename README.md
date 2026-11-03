@@ -6,7 +6,7 @@ and it tells you **when to burn and how**: the upcoming launch windows, the
 ejection burn split into the prograde/normal values you enter in a manoeuvre
 node, the ejection angle, the phase angle and the Δv for the whole trip.
 
-Live at **<https://ksp.findersson.se>**.
+Live at **<https://ksp.findersson.se>** and **<https://drachbar.github.io/ksp-transfer-window/>**.
 
 ## Features
 
@@ -82,6 +82,14 @@ times longer than about one orbit.
 
 ### Deployment
 
-Pushes to `main` on the primary (Gitea) repository build a container image
-(`Containerfile`, static nginx on port 8080) via `.gitea/workflows/build.yml`
-and deploy it with Argo CD. Forks can ignore the `.gitea/` directory or adapt it.
+The app is published in two places from the same `main` branch:
+
+- **<https://ksp.findersson.se>**: pushes to the primary (Gitea) repository build a
+  container image (`Containerfile`, static nginx on port 8080) via
+  `.gitea/workflows/build.yml` and deploy it with Argo CD.
+- **GitHub Pages** (<https://drachbar.github.io/ksp-transfer-window/>): the GitHub
+  mirror runs `.github/workflows/pages.yml`, which tests, builds with the right
+  base path and deploys.
+
+Forks on GitHub can publish their own copy: enable *Settings → Pages → Source:
+GitHub Actions* and push to `main`. The `.gitea/` directory can be ignored.
