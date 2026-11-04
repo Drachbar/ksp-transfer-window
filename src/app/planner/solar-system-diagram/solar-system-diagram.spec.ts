@@ -4,6 +4,7 @@ import { describePhase, layoutSystem } from './solar-system-layout';
 import { sampleResult } from '../../../testing/sample-windows';
 import { DEFAULT_MISSION } from '../mission';
 import { BODIES } from '../../astro/bodies';
+import { bodyColor } from '../body-colors';
 
 describe('SolarSystemDiagram', () => {
   let fixture: ComponentFixture<SolarSystemDiagram>;
@@ -58,5 +59,12 @@ describe('SolarSystemDiagram', () => {
     fixture.componentRef.setInput('window', { ...sampleResult().departNow!, transfer: { ...sampleResult().departNow!.transfer } });
     await fixture.whenStable();
     expect(Array.from(el.querySelectorAll('[data-body]')).map((c) => c.getAttribute('data-body'))).toEqual(['Mun', 'Minmus']);
+  });
+
+  it('paints every body in its own colour, as in the map view', () => {
+    for (const circle of Array.from(el.querySelectorAll('[data-body]'))) {
+      expect(circle.getAttribute('fill')).toBe(bodyColor(circle.getAttribute('data-body')!).fill);
+    }
+    expect(el.querySelector('[data-testid="parent"]')!.getAttribute('fill')).toBe(bodyColor('Kerbol').fill);
   });
 });

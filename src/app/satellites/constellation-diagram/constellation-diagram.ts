@@ -1,6 +1,7 @@
 import { Component, computed, input } from '@angular/core';
 import type { CelestialBody } from '../../astro/bodies';
 import type { Constellation } from '../constellation';
+import { bodyColor } from '../../planner/body-colors';
 
 export interface Point {
   x: number;
@@ -45,6 +46,8 @@ const round = (v: number) => Math.round(v * 100) / 100;
 export class ConstellationDiagram {
   readonly constellation = input.required<Constellation>();
   readonly body = input.required<CelestialBody>();
+
+  protected readonly color = computed(() => bodyColor(this.body().name));
 
   protected readonly layout = computed(() => {
     const l = constellationLayout(this.constellation(), this.body(), 100);

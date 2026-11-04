@@ -11,16 +11,17 @@ svg {
   font-family: inherit;
 }
 
+// A haze in the body's own colour
 .atmosphere {
-  fill: var(--accent-bg);
+  fill-opacity: 0.2;
 }
 
 .body {
-  fill: var(--planet);
+  stroke: var(--border-strong);
+  stroke-width: 1;
 }
 
 .body-name {
-  fill: var(--on-planet);
   font-size: 8px;
   font-weight: 600;
 }

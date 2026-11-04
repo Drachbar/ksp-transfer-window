@@ -18,8 +18,8 @@
   <circle class="orbit" cx="0" cy="0" [attr.r]="orbitRadius" />
   <path class="orbit-direction" d="M -42.4 42.4 A 60 60 0 0 0 -2 60" marker-end="url(#ejection-arrow)" />
 
-  <circle class="planet" cx="0" cy="0" r="22" />
-  <text class="planet-name" x="0" y="4" text-anchor="middle">{{ origin() }}</text>
+  <circle data-testid="planet" class="planet" cx="0" cy="0" r="22" [attr.fill]="color().fill" />
+  <text data-testid="planet-name" class="planet-name" x="0" y="4" text-anchor="middle" [attr.fill]="color().ink">{{ origin() }}</text>
 
   <!-- Ejection angle -->
   <line class="radial" [attr.x1]="radial().x1" [attr.y1]="radial().y1" [attr.x2]="radial().x2" [attr.y2]="radial().y2" />

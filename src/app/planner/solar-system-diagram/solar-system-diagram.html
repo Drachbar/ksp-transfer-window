@@ -27,11 +27,11 @@
       </circle>
     }
 
-    <circle class="parent" cx="0" cy="0" r="7" />
+    <circle data-testid="parent" class="parent" cx="0" cy="0" r="7" [attr.fill]="fill(l.parent)" />
     <text class="parent-label" x="0" y="-11" text-anchor="middle">{{ l.parent }}</text>
 
     @for (b of l.bodies; track b.name) {
-      <circle [attr.data-body]="b.name" [class]="'body ' + b.role" [attr.cx]="b.x" [attr.cy]="b.y" [attr.r]="b.role === 'other' ? 2.5 : 5">
+      <circle [attr.data-body]="b.name" [class]="'body ' + b.role" [attr.fill]="fill(b.name)" [attr.cx]="b.x" [attr.cy]="b.y" [attr.r]="b.role === 'other' ? 2.5 : 5">
         <title>{{ b.name }}</title>
       </circle>
     }

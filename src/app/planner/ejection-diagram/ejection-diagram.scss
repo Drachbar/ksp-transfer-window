@@ -48,11 +48,11 @@ svg {
 }
 
 .planet {
-  fill: var(--planet);
+  stroke: var(--border-strong);
+  stroke-width: 1;
 }
 
 .planet-name {
-  fill: var(--on-planet);
   font-size: 9px;
   font-weight: 600;
 }

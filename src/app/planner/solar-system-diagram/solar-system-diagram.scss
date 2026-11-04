@@ -95,10 +95,6 @@ svg {
   stroke-width: 1.5;
 }
 
-.parent {
-  fill: var(--sun);
-}
-
 .parent-label,
 .body-label {
   fill: var(--text);
@@ -109,21 +105,10 @@ svg {
   fill: var(--text-muted);
 }
 
+// Each body in its own colour (set in the template), outlined to stand out on either theme.
 .body {
-  stroke: var(--surface);
-  stroke-width: 1;
-
-  &.origin {
-    fill: var(--planet);
-  }
-
-  &.destination {
-    fill: var(--accent);
-  }
-
-  &.other {
-    fill: var(--text-muted);
-  }
+  stroke: var(--border-strong);
+  stroke-width: 0.6;
 }
 
 figcaption {

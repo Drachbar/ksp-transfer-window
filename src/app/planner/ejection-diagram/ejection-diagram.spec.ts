@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { burnPoint, EjectionDiagram } from './ejection-diagram';
+import { bodyColor } from '../body-colors';
 
 describe('burnPoint', () => {
   // Screen coordinates (y down) around the planet: prograde is up, the Sun is to the left.
@@ -52,5 +53,11 @@ describe('EjectionDiagram', () => {
     fixture.componentRef.setInput('parent', 'Kerbin');
     await fixture.whenStable();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Kerbin');
+  });
+
+  it('paints the planet in its own colour, its name readable on it', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="planet"]')!.getAttribute('fill')).toBe(bodyColor('Kerbin').fill);
+    expect(el.querySelector('[data-testid="planet-name"]')!.getAttribute('fill')).toBe(bodyColor('Kerbin').ink);
   });
 });

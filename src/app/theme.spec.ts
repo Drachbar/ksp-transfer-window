@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Theme } from './theme';
+import { Theme, THEME_STORAGE } from './theme';
 
 /** A matchMedia stand-in where only "prefers dark" can match. */
 function stubColorScheme(dark: boolean) {
@@ -18,13 +18,26 @@ function stubColorScheme(dark: boolean) {
   };
 }
 
+/** In-memory storage, so the tests do not depend on the runtime's localStorage. */
+function memoryStorage() {
+  const items = new Map<string, string>();
+  return {
+    getItem: (key: string) => items.get(key) ?? null,
+    setItem: (key: string, value: string) => void items.set(key, value),
+  };
+}
+
 describe('Theme', () => {
   const html = document.documentElement;
+  let storage: ReturnType<typeof memoryStorage>;
+  const provideStorage = (s: Pick<Storage, 'getItem' | 'setItem'> | null) =>
+    TestBed.configureTestingModule({ providers: [{ provide: THEME_STORAGE, useValue: s }] });
   const theme = () => TestBed.inject(Theme);
   const settle = () => TestBed.tick();
 
   beforeEach(() => {
-    localStorage.clear();
+    storage = memoryStorage();
+    provideStorage(storage);
     delete html.dataset['theme'];
   });
 
@@ -55,19 +68,26 @@ describe('Theme', () => {
     stubColorScheme(false);
     theme().toggle();
     TestBed.resetTestingModule();
+    provideStorage(storage);
     expect(theme().current()).toBe('dark');
   });
 
   it('works without storage', () => {
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-      throw new Error('blocked');
-    });
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-      throw new Error('blocked');
-    });
+    TestBed.resetTestingModule();
+    provideStorage(null);
     expect(theme().current()).toBe('light');
     theme().toggle();
     expect(theme().current()).toBe('dark');
-    vi.restoreAllMocks();
+  });
+
+  it('works when storage refuses access', () => {
+    TestBed.resetTestingModule();
+    const blocked = () => {
+      throw new Error('blocked');
+    };
+    provideStorage({ getItem: blocked, setItem: blocked });
+    expect(theme().current()).toBe('light');
+    theme().toggle();
+    expect(theme().current()).toBe('dark');
   });
 });

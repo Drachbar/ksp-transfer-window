@@ -1,5 +1,6 @@
 import { Component, computed, input } from '@angular/core';
 import { formatAngle } from '../format';
+import { bodyColor } from '../body-colors';
 
 /**
  * Where on the parking orbit to burn, in screen coordinates (y down) around the
@@ -28,6 +29,7 @@ export class EjectionDiagram {
   readonly parent = input('Sun');
 
   protected readonly orbitRadius = ORBIT_RADIUS;
+  protected readonly color = computed(() => bodyColor(this.origin()));
   protected readonly angleText = computed(() => formatAngle(this.ejectionAngle()));
   protected readonly label = computed(() => `Burn at ${this.angleText()} from ${this.origin()}’s prograde direction`);
 

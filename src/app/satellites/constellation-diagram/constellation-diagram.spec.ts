@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ConstellationDiagram, constellationLayout } from './constellation-diagram';
 import { constellation, synchronousOrbit } from '../constellation';
 import { BODIES } from '../../astro/bodies';
+import { bodyColor } from '../../planner/body-colors';
 
 const kerbin = BODIES.Kerbin;
 const target = synchronousOrbit(kerbin).altitude;
@@ -54,5 +55,11 @@ describe('ConstellationDiagram', () => {
     expect(el.querySelectorAll('[data-testid="satellite"]').length).toBe(3);
     expect(el.querySelector('svg')!.getAttribute('aria-label')).toMatch(/3 satellites .* Kerbin/);
     expect(el.textContent).toContain('Release at apoapsis');
+  });
+
+  it('paints the body in its own colour, its name readable on it', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="body"]')!.getAttribute('fill')).toBe(bodyColor('Kerbin').fill);
+    expect(el.querySelector('[data-testid="body-name"]')!.getAttribute('fill')).toBe(bodyColor('Kerbin').ink);
   });
 });

@@ -6,13 +6,17 @@ import { routes } from './app.routes';
 import { Planner } from './planner/planner/planner';
 import { SatellitesPage } from './satellites/satellites-page/satellites-page';
 import { WindowSearch } from './search/window-search';
-import { Theme } from './theme';
+import { Theme, THEME_STORAGE } from './theme';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideRouter(routes), { provide: WindowSearch, useValue: { search: () => new Promise(() => {}) } }],
+      providers: [
+        provideRouter(routes),
+        { provide: WindowSearch, useValue: { search: () => new Promise(() => {}) } },
+        { provide: THEME_STORAGE, useValue: null },
+      ],
     }).compileComponents();
   });
 
@@ -67,7 +71,6 @@ describe('App', () => {
   });
 
   it('switches between the light and the dark theme from the header', async () => {
-    localStorage.clear();
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('header [data-testid="theme-toggle"]')!;
@@ -77,6 +80,5 @@ describe('App', () => {
     await fixture.whenStable();
     expect(TestBed.inject(Theme).current()).toBe('dark');
     expect(button.getAttribute('aria-pressed')).toBe('true');
-    localStorage.clear();
   });
 });

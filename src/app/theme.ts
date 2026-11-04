@@ -1,25 +1,20 @@
-import { computed, DestroyRef, DOCUMENT, effect, inject, Service, signal } from '@angular/core';
+import { computed, DestroyRef, DOCUMENT, effect, inject, InjectionToken, Service, signal } from '@angular/core';
 
 export type ThemeName = 'light' | 'dark';
 
+/** Where the chosen theme is kept between visits; null where there is no storage. */
+export const THEME_STORAGE = new InjectionToken<Pick<Storage, 'getItem' | 'setItem'> | null>('THEME_STORAGE', {
+  providedIn: 'root',
+  factory: () => {
+    try {
+      return globalThis.localStorage ?? null;
+    } catch {
+      return null; // Access denied, e.g. with site data blocked
+    }
+  },
+});
+
 const STORAGE_KEY = 'theme';
-
-function load(): ThemeName | null {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved === 'light' || saved === 'dark' ? saved : null;
-  } catch {
-    return null;
-  }
-}
-
-function save(theme: ThemeName) {
-  try {
-    localStorage.setItem(STORAGE_KEY, theme);
-  } catch {
-    // Storage blocked: the choice lasts until the page is closed.
-  }
-}
 
 /**
  * Light or dark: the OS colour scheme until the user picks one, which is remembered.
@@ -27,8 +22,9 @@ function save(theme: ThemeName) {
  */
 @Service()
 export class Theme {
+  private readonly storage = inject(THEME_STORAGE);
   private readonly systemDark = signal(false);
-  private readonly chosen = signal<ThemeName | null>(load());
+  private readonly chosen = signal<ThemeName | null>(this.load());
 
   readonly current = computed<ThemeName>(() => this.chosen() ?? (this.systemDark() ? 'dark' : 'light'));
 
@@ -48,6 +44,19 @@ export class Theme {
   toggle() {
     const next = this.current() === 'dark' ? 'light' : 'dark';
     this.chosen.set(next);
-    save(next);
+    try {
+      this.storage?.setItem(STORAGE_KEY, next);
+    } catch {
+      // Storage full or blocked: the choice lasts until the page is closed.
+    }
+  }
+
+  private load(): ThemeName | null {
+    try {
+      const saved = this.storage?.getItem(STORAGE_KEY);
+      return saved === 'light' || saved === 'dark' ? saved : null;
+    } catch {
+      return null;
+    }
   }
 }

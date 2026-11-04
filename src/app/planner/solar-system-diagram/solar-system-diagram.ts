@@ -2,6 +2,7 @@ import { Component, computed, input, signal } from '@angular/core';
 import { describePhase, layoutSystem, type Point } from './solar-system-layout';
 import { nowOf, type Mission } from '../mission';
 import { BODIES } from '../../astro/bodies';
+import { bodyColor } from '../body-colors';
 import type { TransferWindow } from '../../search/window-finder';
 
 const RADIUS = 100;
@@ -21,6 +22,7 @@ const outward = (p: Point, by: number): Point => {
   styleUrl: './solar-system-diagram.scss',
 })
 export class SolarSystemDiagram {
+  protected readonly fill = (name: string) => bodyColor(name).fill;
   readonly window = input.required<TransferWindow>();
   readonly mission = input.required<Mission>();
 

@@ -3,10 +3,10 @@
   <title>{{ label() }}</title>
 
   @if (l.atmosphereRadius > l.bodyRadius) {
-    <circle class="atmosphere" cx="0" cy="0" [attr.r]="l.atmosphereRadius" />
+    <circle class="atmosphere" cx="0" cy="0" [attr.r]="l.atmosphereRadius" [attr.fill]="color().fill" />
   }
-  <circle class="body" cx="0" cy="0" [attr.r]="l.bodyRadius" />
-  <text class="body-name" x="0" y="4" text-anchor="middle">{{ body().name }}</text>
+  <circle data-testid="body" class="body" cx="0" cy="0" [attr.r]="l.bodyRadius" [attr.fill]="color().fill" />
+  <text data-testid="body-name" class="body-name" x="0" y="4" text-anchor="middle" [attr.fill]="color().ink">{{ body().name }}</text>
 
   <circle class="target" cx="0" cy="0" [attr.r]="l.targetRadius" />
   <ellipse class="deployment" [attr.cx]="l.ellipse.cx" [attr.cy]="l.ellipse.cy" [attr.rx]="l.ellipse.rx" [attr.ry]="l.ellipse.ry" />
