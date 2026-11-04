@@ -1,9 +1,9 @@
 @let m = mission();
 @let b = budget();
-<section class="budget" aria-labelledby="budget-heading">
-  <div class="header">
+<section class="panel" aria-labelledby="budget-heading">
+  <div class="panel-header">
     <h2 id="budget-heading" class="panel-title">Mission Δv</h2>
-    <button type="button" class="toggle" [attr.aria-expanded]="open()" aria-controls="budget-breakdown" (click)="open.set(!open())">
+    <button type="button" class="button" [attr.aria-expanded]="open()" aria-controls="budget-breakdown" (click)="open.set(!open())">
       {{ open() ? 'Hide breakdown' : 'Show breakdown' }}
     </button>
   </div>
@@ -23,7 +23,7 @@
         }
       </div>
 
-      <table>
+      <table class="data-table">
         <caption class="sr-only">Δv for each part of the mission</caption>
         <thead>
           <tr>

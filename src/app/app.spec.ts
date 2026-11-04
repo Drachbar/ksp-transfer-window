@@ -6,6 +6,7 @@ import { routes } from './app.routes';
 import { Planner } from './planner/planner/planner';
 import { SatellitesPage } from './satellites/satellites-page/satellites-page';
 import { WindowSearch } from './search/window-search';
+import { Theme } from './theme';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -63,5 +64,19 @@ describe('App', () => {
     await harness.navigateByUrl('/satellites?body=Duna');
     await app.whenStable();
     expect(Array.from((app.nativeElement as HTMLElement).querySelectorAll('nav a.active')).map((a) => a.textContent!.trim())).toEqual(['Satellites']);
+  });
+
+  it('switches between the light and the dark theme from the header', async () => {
+    localStorage.clear();
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('header [data-testid="theme-toggle"]')!;
+    expect(button.textContent!.trim()).toBe('Dark mode');
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+    button.click();
+    await fixture.whenStable();
+    expect(TestBed.inject(Theme).current()).toBe('dark');
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    localStorage.clear();
   });
 });

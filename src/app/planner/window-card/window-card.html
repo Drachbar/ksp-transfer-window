@@ -1,18 +1,18 @@
 @let v = view();
 @let m = mission();
-<article class="card">
+<article class="panel card">
   <header class="card-header">
-    <h2>{{ heading() }}</h2>
-    <dl class="summary" data-testid="burn-summary">
+    <h2 class="panel-title">{{ heading() }}</h2>
+    <dl class="readouts" data-testid="burn-summary">
       <div>
         <dt>Depart</dt>
         <dd>{{ v.departureShort }}</dd>
       </div>
-      <div>
+      <div class="prograde">
         <dt>Prograde</dt>
         <dd data-field="prograde">{{ v.prograde }}</dd>
       </div>
-      <div>
+      <div class="normal">
         <dt>Normal</dt>
         <dd data-field="normal">{{ v.normal }}</dd>
       </div>
@@ -22,7 +22,7 @@
           <dd data-field="ejection-angle">{{ v.ejectionAngleText }}</dd>
         </div>
       }
-      <div class="summary-total">
+      <div class="total">
         <dt>Total Δv</dt>
         <dd data-field="total">{{ v.total }}</dd>
       </div>
@@ -56,14 +56,14 @@
     <p class="instruction" data-testid="instruction">
       @if (v.ejectionAngle !== undefined) {
         Put a manoeuvre node on your parking orbit <strong>{{ v.ejectionAngleText }} from {{ m.origin }}’s prograde direction</strong>
-        (the marked point in the diagram) and pull <strong>{{ v.burn }}</strong>.
+        (the marked point in the diagram) and pull @for (p of v.burn; track p.axis; let last = $last) {<strong [class]="p.axis">{{ p.text }}</strong>@if (!last) { and }}.
       } @else {
-        Burn <strong>{{ v.burn }}</strong>.
+        Burn @for (p of v.burn; track p.axis; let last = $last) {<strong [class]="p.axis">{{ p.text }}</strong>@if (!last) { and }}.
       }
     </p>
     <div class="split">
       <dl class="facts">
-        <div class="fact-main">
+        <div class="main">
           <dt>Burn Δv</dt>
           <dd data-field="ejection">{{ v.ejection }}</dd>
         </div>
@@ -73,16 +73,16 @@
       }
     </div>
     @if (v.alternative; as alt) {
-      <div class="tip" data-testid="plane-change-tip">
+      <div class="callout tip" data-testid="plane-change-tip">
         <p>
           <strong>Tip:</strong> with a mid-course plane change, a transfer departing {{ alt.departure }} costs
           {{ alt.total }}: that saves {{ alt.saving }} ({{ alt.percent }}%).
         </p>
-        <button type="button" (click)="showAlternative.emit(window().planeChangeAlternative!)">Show this transfer</button>
+        <button type="button" class="button" (click)="showAlternative.emit(window().planeChangeAlternative!)">Show this transfer</button>
       </div>
     }
     @if (!v.refined) {
-      <p class="note" data-testid="estimate-note">
+      <p class="callout warning note" data-testid="estimate-note">
         The ejection numbers are an estimate: refining them for the exact point where you leave {{ m.origin }}’s sphere of
         influence did not converge. Expect to fine-tune the manoeuvre node a little.
       </p>
@@ -93,11 +93,11 @@
     <section class="step" aria-labelledby="step-plane-change">
       <h3 id="step-plane-change"><span class="step-number">3</span> Mid-course plane change</h3>
       <p class="instruction" data-testid="instruction">
-        Around <strong>{{ pc.time }}</strong>, burn <strong>{{ pc.deltaV }}</strong> normal or anti-normal to tilt your orbit
+        Around <strong>{{ pc.time }}</strong>, burn <strong>{{ pc.deltaV }}</strong> <span class="normal">normal or anti-normal</span> to tilt your orbit
         {{ pc.angle }} into {{ m.destination }}’s plane.
       </p>
       <dl class="facts">
-        <div class="fact-main">
+        <div class="main">
           <dt>Δv</dt>
           <dd data-field="plane-change">{{ pc.deltaV }}</dd>
         </div>
@@ -119,13 +119,13 @@
       @if (v.aerobrake; as a) {
         @if (a.fix) {
           Aim your periapsis into {{ m.destination }}’s atmosphere and let drag slow you down: you reach the top of the
-          atmosphere at about <strong>{{ a.entrySpeed }}</strong>. Once captured, burn <strong>{{ a.fix }} prograde</strong> at
+          atmosphere at about <strong>{{ a.entrySpeed }}</strong>. Once captured, burn <strong class="prograde">{{ a.fix }} prograde</strong> at
           apoapsis to lift your periapsis out of the air into a {{ m.finalAltitudeKm }} km orbit.
         } @else {
           A {{ m.finalAltitudeKm }} km orbit is inside {{ m.destination }}’s atmosphere: choose a higher capture orbit to aerobrake into.
         }
       } @else if (m.capture) {
-        At periapsis, burn <strong>{{ v.capture }}</strong> retrograde to capture into a {{ m.finalAltitudeKm }} km orbit around
+        At periapsis, burn <strong class="prograde">{{ v.capture }} retrograde</strong> to capture into a {{ m.finalAltitudeKm }} km orbit around
         {{ m.destination }}.
       } @else {
         Flyby: no capture burn. You pass {{ m.destination }} around {{ v.arrival }}.
@@ -165,12 +165,12 @@
           </p>
           <div class="return-row">
             <dl class="facts">
-              <div class="fact-main">
+              <div class="main">
                 <dt>Round trip Δv</dt>
                 <dd data-field="round-trip">{{ home.roundTrip }}</dd>
               </div>
             </dl>
-            <button type="button" class="return-button" (click)="showReturn.emit()">Show the return trip</button>
+            <button type="button" class="button" (click)="showReturn.emit()">Show the return trip</button>
           </div>
         }
       }

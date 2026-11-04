@@ -25,12 +25,12 @@
         </select>
       </div>
     </div>
-    <div class="trip" role="radiogroup" aria-label="Trip">
-      <label class="segment" for="mission-trip-one">
+    <div class="segmented trip" role="radiogroup" aria-label="Trip">
+      <label for="mission-trip-one">
         <input id="mission-trip-one" type="radio" name="mission-trip" value="one"
                [checked]="!f.roundTrip().value()" (change)="f.roundTrip().value.set(false)" /> One way
       </label>
-      <label class="segment" for="mission-trip-round">
+      <label for="mission-trip-round">
         <input id="mission-trip-round" type="radio" name="mission-trip" value="round"
                [checked]="f.roundTrip().value()" (change)="f.roundTrip().value.set(true)" /> Round trip
       </label>
@@ -66,7 +66,7 @@
     </div>
     <div class="advance" role="group" aria-label="Move the game time forward">
       @for (days of [1, 10, 100]; track days) {
-        <button type="button" (click)="advance(days)">+{{ days }} d</button>
+        <button type="button" class="button small" (click)="advance(days)">+{{ days }} d</button>
       }
     </div>
   </fieldset>
@@ -113,7 +113,7 @@
   }
 
   <div class="more">
-    <button type="button" class="more-toggle" data-testid="more-options" aria-controls="mission-more"
+    <button type="button" class="button" data-testid="more-options" aria-controls="mission-more"
             [attr.aria-expanded]="moreOpen()" (click)="showMore.set(!moreOpen())">
       {{ moreOpen() ? 'Fewer options' : 'More options' }}
     </button>

@@ -9,6 +9,7 @@ import { WindowSearch } from '../../search/window-search';
 import { departureTimeAt, timeOfFlightAt } from '../../search/porkchop';
 import type { PorkchopResult } from '../../search/window-search-protocol';
 import type { TransferWindow } from '../../search/window-finder';
+import { Theme } from '../../theme';
 
 export interface PorkchopPick {
   departureTime: number;
@@ -20,7 +21,6 @@ const shortDate = (t: number, c: Calendar) => {
   const d = toGameDate(t, c);
   return `Y${d.year} D${d.day}`;
 };
-const prefersDark = () => typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches;
 
 /** Δv for every departure time × time of flight around a window. Click a point to see that transfer. */
 @Component({
@@ -30,6 +30,7 @@ const prefersDark = () => typeof matchMedia === 'function' && matchMedia('(prefe
 })
 export class PorkchopPlot {
   private readonly windowSearch = inject(WindowSearch);
+  private readonly appTheme = inject(Theme);
 
   readonly mission = input.required<Mission>();
   /** Windows to mark on the plot. */
@@ -47,7 +48,7 @@ export class PorkchopPlot {
   protected readonly cursor = signal<Cell | null>(null);
 
   private readonly canvas = viewChild<ElementRef<HTMLCanvasElement>>('canvas');
-  private readonly theme = signal<PlotTheme>(prefersDark() ? RAMPS.dark : RAMPS.light);
+  private readonly theme = computed<PlotTheme>(() => RAMPS[this.appTheme.current()]);
 
   protected readonly calendar = computed(() => calendarOf(this.mission()));
   /** Cheap is dark on a light background and light on a dark one. */
@@ -165,13 +166,6 @@ export class PorkchopPlot {
           this.error.set(e instanceof Error ? e.message : String(e));
         });
     });
-
-    // Follow the OS colour scheme.
-    if (typeof matchMedia === 'function') {
-      const query = matchMedia('(prefers-color-scheme: dark)');
-      const update = () => this.theme.set(query.matches ? RAMPS.dark : RAMPS.light);
-      query.addEventListener?.('change', update);
-    }
 
     // Draw the grid.
     effect(() => {

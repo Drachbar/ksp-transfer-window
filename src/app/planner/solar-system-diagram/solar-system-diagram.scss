@@ -48,28 +48,6 @@ figcaption {
   }
 }
 
-.modes {
-  display: inline-flex;
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  overflow: hidden;
-
-  button {
-    padding: 0.3rem 0.8rem;
-    border: 0;
-    background: transparent;
-    color: var(--text-muted);
-    font: inherit;
-    font-size: 0.85rem;
-    cursor: pointer;
-
-    &[aria-pressed='true'] {
-      background: var(--accent);
-      color: var(--on-accent);
-    }
-  }
-}
-
 svg {
   display: block;
   justify-self: stretch;
@@ -103,16 +81,17 @@ svg {
   stroke-width: 1.5;
 }
 
+// The planned trajectory: orange, as after a manoeuvre node in the map view.
 .transfer {
   fill: none;
-  stroke: var(--accent);
+  stroke: var(--heading);
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
 }
 
 .arrival {
   fill: none;
-  stroke: var(--accent);
+  stroke: var(--heading);
   stroke-width: 1.5;
 }
 

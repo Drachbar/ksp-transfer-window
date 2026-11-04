@@ -1,6 +1,6 @@
 @let l = layout();
 <figure>
-  <div class="modes" role="group" aria-label="Show positions">
+  <div class="segmented modes" role="group" aria-label="Show positions">
     <button type="button" [attr.aria-pressed]="mode() === 'departure'" (click)="mode.set('departure')">At departure</button>
     <button type="button" [attr.aria-pressed]="mode() === 'now'" (click)="mode.set('now')">Now</button>
   </div>

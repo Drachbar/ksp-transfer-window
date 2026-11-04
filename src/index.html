@@ -5,6 +5,14 @@
   <title>KSP Transfer Window</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="When to burn, and how: transfer window and satellite network planning for Kerbal Space Program.">
+  <script>
+    // Apply a saved theme before the first paint, so a dark page never flashes light.
+    try {
+      const theme = localStorage.getItem('theme');
+      if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+    } catch {}
+  </script>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>

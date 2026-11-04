@@ -16,6 +16,15 @@ svg {
   stroke-width: 1.5;
 }
 
+.prograde-guide {
+  stroke: var(--prograde);
+}
+
+.prograde-caption {
+  fill: var(--prograde);
+  font-weight: 600;
+}
+
 .arrowhead {
   fill: context-stroke;
 }
@@ -67,12 +76,12 @@ svg {
 }
 
 .burn-point {
-  fill: var(--accent);
+  fill: var(--maneuver);
   stroke: var(--surface);
   stroke-width: 2;
 }
 
 .burn-arrow {
-  stroke: var(--accent);
+  stroke: var(--maneuver);
   stroke-width: 2.5;
 }

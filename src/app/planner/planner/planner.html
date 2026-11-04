@@ -3,7 +3,7 @@
     <div class="section-header">
       <h2 id="mission-heading" class="panel-title">Your mission</h2>
       @if (narrow() && result()) {
-        <button type="button" class="link-button" [attr.aria-expanded]="formOpen()" aria-controls="mission-form"
+        <button type="button" class="button" [attr.aria-expanded]="formOpen()" aria-controls="mission-form"
                 (click)="editing.set(!editing())">
           {{ editing() ? 'Done' : 'Edit' }}
         </button>
@@ -12,7 +12,7 @@
     @if (formOpen()) {
       <app-mission-form id="mission-form" [form]="missionForm" />
     } @else {
-      <p class="mission-summary" data-testid="mission-summary">
+      <p class="form-summary" data-testid="mission-summary">
         <strong>{{ missionSummary().route }}</strong>
         <span>{{ missionSummary().date }} · {{ missionSummary().orbits }}</span>
       </p>
@@ -30,7 +30,7 @@
     }
 
     @if (error(); as message) {
-      <p class="error" role="alert">{{ message }}</p>
+      <p class="callout danger" role="alert">{{ message }}</p>
     }
 
     @if (!result() && !error()) {
@@ -47,13 +47,13 @@
 
     @if (result(); as r) {
       @if (outOfDate()) {
-        <p class="stale-note" data-testid="stale-note" role="status">
+        <p class="callout warning" data-testid="stale-note" role="status">
           These results are for your previous input. Fix the highlighted fields to update them.
         </p>
       }
       <div class="result" [class.stale]="progress() !== null || outOfDate()">
         @if (summary(); as s) {
-          <p class="summary" data-testid="summary">
+          <p class="callout" data-testid="summary">
             @switch (s.kind) {
               @case ('wait') {
                 Leaving now costs <strong>{{ s.now }}</strong>. Waiting <strong>{{ s.wait }}</strong> for the next window saves
@@ -89,10 +89,10 @@
           <p class="empty">No transfer windows found for this route.</p>
         }
 
-        <section aria-labelledby="overview-heading">
+        <section class="panel" aria-labelledby="overview-heading">
           <div class="section-header">
             <h2 id="overview-heading" class="panel-title">All destinations from {{ resultMission().origin }}</h2>
-            <button type="button" class="link-button" [attr.aria-expanded]="showOverview()" (click)="showOverview.set(!showOverview())">
+            <button type="button" class="button" [attr.aria-expanded]="showOverview()" (click)="showOverview.set(!showOverview())">
               {{ showOverview() ? 'Hide' : 'Compare all destinations' }}
             </button>
           </div>
@@ -105,10 +105,10 @@
         </section>
 
         @if (listWindow(); as center) {
-          <section class="panel-flat" aria-labelledby="porkchop-heading">
+          <section class="panel" aria-labelledby="porkchop-heading">
             <div class="section-header">
               <h2 id="porkchop-heading" class="panel-title">Porkchop plot</h2>
-              <button type="button" class="link-button" [attr.aria-expanded]="showPlot()" (click)="showPlot.set(!showPlot())">
+              <button type="button" class="button" [attr.aria-expanded]="showPlot()" (click)="showPlot.set(!showPlot())">
                 {{ showPlot() ? 'Hide porkchop plot' : 'Show porkchop plot' }}
               </button>
             </div>
@@ -118,7 +118,7 @@
                 @if (pickedSummary(); as p) {
                   <p class="picked" data-testid="picked" aria-live="polite">
                     Selected: depart <strong>{{ p.departure }}</strong>, flight {{ p.flight }}, <strong>{{ p.deltaV }}</strong>.
-                    <button type="button" class="link-button" (click)="showCard()">Show details</button>
+                    <button type="button" class="button" (click)="showCard()">Show details</button>
                   </p>
                 }
               } @loading {

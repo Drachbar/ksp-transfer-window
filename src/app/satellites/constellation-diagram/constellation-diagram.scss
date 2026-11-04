@@ -33,7 +33,7 @@ svg {
 
 .deployment {
   fill: none;
-  stroke: var(--text-muted);
+  stroke: var(--heading);
   stroke-width: 1.2;
   stroke-dasharray: 4 3;
 }
@@ -78,6 +78,6 @@ svg {
   border-top: 2px solid var(--accent);
 
   &.deployment-swatch {
-    border-top: 2px dashed var(--text-muted);
+    border-top: 2px dashed var(--heading);
   }
 }

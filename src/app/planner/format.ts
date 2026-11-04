@@ -25,13 +25,26 @@ export function formatAngle(radians: number | undefined | null, decimals = 0): s
   return `${degrees < 0 ? MINUS : ''}${Math.abs(degrees).toFixed(decimals)}°`;
 }
 
+/** One handle of a manoeuvre node to pull, with the axis it lies on (for the navball colours). */
+export interface BurnPart {
+  text: string;
+  axis: 'prograde' | 'normal';
+}
+
+/** The handles to pull, leaving out any that round to zero. */
+export function burnParts(prograde: number, normal: number): BurnPart[] {
+  const part = (v: number, axis: BurnPart['axis'], positive: string, negative: string): BurnPart | null => {
+    const rounded = Math.round(v);
+    return rounded === 0 ? null : { text: `${integer.format(Math.abs(rounded))} m/s ${rounded > 0 ? positive : negative}`, axis };
+  };
+  return [part(prograde, 'prograde', 'prograde', 'retrograde'), part(normal, 'normal', 'normal', 'anti-normal')].filter((p) => p !== null);
+}
+
 /** "1,027 m/s prograde and 205 m/s anti-normal": the manoeuvre node handles to pull. */
 export function describeBurn(prograde: number, normal: number): string {
-  const part = (v: number, positive: string, negative: string) => {
-    const rounded = Math.round(v);
-    return rounded === 0 ? null : `${integer.format(Math.abs(rounded))} m/s ${rounded > 0 ? positive : negative}`;
-  };
-  return [part(prograde, 'prograde', 'retrograde'), part(normal, 'normal', 'anti-normal')].filter(Boolean).join(' and ');
+  return burnParts(prograde, normal)
+    .map((p) => p.text)
+    .join(' and ');
 }
 
 const oneDecimal = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });

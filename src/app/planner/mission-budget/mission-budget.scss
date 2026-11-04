@@ -2,54 +2,28 @@
   display: block;
 }
 
-.budget {
-  padding: 1.25rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-}
-
-.header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
-}
-
-.panel-title {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.toggle {
-  padding: 0.35rem 0.8rem;
-  border: 1px solid var(--accent);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--accent);
-  font: inherit;
-  font-size: 0.9rem;
-  cursor: pointer;
-
-  &:hover {
-    background: var(--accent-bg);
-  }
+.panel-header {
+  margin-bottom: 0;
 }
 
 .total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
   margin: 0.5rem 0 0;
-  font-variant-numeric: tabular-nums;
 
   strong {
-    font-size: 1.3rem;
-    color: var(--accent);
+    color: var(--readout);
+    font-family: var(--font-mono);
+    font-size: 1.4rem;
+    font-weight: 600;
   }
 }
 
 .includes {
-  font-size: 0.85rem;
   color: var(--text-muted);
+  font-size: 0.85rem;
 }
 
 #budget-breakdown {
@@ -65,64 +39,43 @@
 
 .choice {
   display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
   font-size: 0.9rem;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-variant-numeric: tabular-nums;
-}
+.data-table {
+  th,
+  td {
+    padding-inline: 0;
+    vertical-align: top;
+  }
 
-th,
-td {
-  padding: 0.5rem 0;
-  text-align: left;
-  vertical-align: top;
-}
+  .num {
+    padding-left: 1rem;
+  }
 
-thead th {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  border-bottom: 1px solid var(--border);
-}
+  tbody th {
+    font-weight: 400;
+  }
 
-tbody th {
-  font-weight: 400;
-}
+  tfoot th,
+  tfoot td {
+    border-top: 2px solid var(--border-strong);
+    font-weight: 700;
+  }
 
-tbody tr + tr {
-  border-top: 1px solid var(--border);
-}
-
-tfoot th,
-tfoot td {
-  border-top: 2px solid var(--border-strong);
-  font-weight: 700;
-  font-size: 1.05rem;
-}
-
-tfoot td {
-  color: var(--accent);
-}
-
-.num {
-  text-align: right;
-  white-space: nowrap;
-  padding-left: 1rem;
+  tfoot td {
+    color: var(--readout);
+    font-size: 1.05rem;
+  }
 }
 
 .note {
   display: block;
-  font-size: 0.75rem;
   color: var(--text-muted);
+  font-size: 0.75rem;
 }
 
 .muted {
   margin: 0.75rem 0 0;
   font-size: 0.8rem;
-  color: var(--text-muted);
 }

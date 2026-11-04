@@ -25,8 +25,8 @@ export interface PlotTheme {
 const BLUE = ['#cde2fb', '#b7d3f6', '#9ec5f4', '#86b6ef', '#6da7ec', '#5598e7', '#3987e5', '#2a78d6', '#256abf', '#1c5cab', '#184f95', '#104281', '#0d366b'];
 
 export const RAMPS: Record<'light' | 'dark', PlotTheme> = {
-  light: { ramp: [...BLUE].reverse(), impossible: '#e4e7eb' },
-  dark: { ramp: BLUE, impossible: '#262c35' },
+  light: { ramp: [...BLUE].reverse(), impossible: '#dcd9d1' },
+  dark: { ramp: BLUE, impossible: '#20262a' },
 };
 
 /** The scale never reaches beyond this multiple of the cheapest transfer. */

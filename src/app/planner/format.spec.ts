@@ -1,4 +1,4 @@
-import { describeBurn, formatAngle, formatDeltaV, formatDistance, formatSignedDeltaV } from './format';
+import { burnParts, describeBurn, formatAngle, formatDeltaV, formatDistance, formatSignedDeltaV } from './format';
 
 describe('format', () => {
   it('formats Δv in whole m/s with thousands separators', () => {
@@ -32,6 +32,16 @@ describe('describeBurn', () => {
   it('leaves out components that round to zero', () => {
     expect(describeBurn(1441, 0.3)).toBe('1,441 m/s prograde');
     expect(describeBurn(0.2, 80)).toBe('80 m/s normal');
+  });
+});
+
+describe('burnParts', () => {
+  it('splits the burn into handles, each with its manoeuvre axis', () => {
+    expect(burnParts(-50, -10.2)).toEqual([
+      { text: '50 m/s retrograde', axis: 'prograde' },
+      { text: '10 m/s anti-normal', axis: 'normal' },
+    ]);
+    expect(burnParts(1441, 0.3)).toEqual([{ text: '1,441 m/s prograde', axis: 'prograde' }]);
   });
 });
 

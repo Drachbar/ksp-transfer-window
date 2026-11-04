@@ -11,27 +11,78 @@
   padding-inline: 1rem;
 }
 
+// A toolbar across the top, like the one in the game.
 .site-header {
-  padding: 1.5rem 0 1.25rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(var(--surface-top), var(--surface));
+  box-shadow: var(--bevel), var(--shadow);
 
   .container {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 0.75rem 1.5rem;
-  }
-
-  h1 {
-    margin: 0;
-    font-size: 1.6rem;
-    letter-spacing: -0.01em;
+    align-items: center;
+    gap: 0.5rem 1.5rem;
+    padding-block: 0.6rem;
   }
 }
 
-.tagline {
-  margin: 0.25rem 0 0;
-  color: var(--text-muted);
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 auto 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.brand-mark {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.brand-orbit {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.2;
+}
+
+.brand-body {
+  fill: var(--planet);
+}
+
+.brand-craft {
+  fill: var(--heading);
+}
+
+nav {
+  display: flex;
+  gap: 0.25rem;
+
+  a {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    text-transform: uppercase;
+
+    &:hover {
+      color: var(--text);
+    }
+
+    &.active {
+      border-color: var(--border-strong);
+      background: var(--inset);
+      color: var(--text);
+      box-shadow: inset 0 -2px 0 var(--accent);
+    }
+  }
 }
 
 main {
@@ -42,8 +93,8 @@ main {
 .site-footer {
   padding: 1.25rem 0;
   border-top: 1px solid var(--border);
-  font-size: 0.85rem;
   color: var(--text-muted);
+  font-size: 0.85rem;
 
   p {
     margin: 0;
@@ -51,27 +102,5 @@ main {
 
   a {
     color: inherit;
-  }
-}
-
-nav {
-  display: flex;
-  gap: 0.25rem;
-
-  a {
-    padding: 0.4rem 0.8rem;
-    border-radius: 999px;
-    color: var(--text-muted);
-    text-decoration: none;
-    font-weight: 600;
-
-    &:hover {
-      color: var(--text);
-    }
-
-    &.active {
-      background: var(--accent-bg);
-      color: var(--accent);
-    }
   }
 }

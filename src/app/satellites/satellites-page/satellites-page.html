@@ -4,7 +4,7 @@
     <div class="panel-header">
       <h2 id="plan-heading" class="panel-title">Satellite network</h2>
       @if (narrow() && result()) {
-        <button type="button" class="link-button" [attr.aria-expanded]="formOpen()" aria-controls="plan-form" (click)="editing.set(!editing())">
+        <button type="button" class="button" [attr.aria-expanded]="formOpen()" aria-controls="plan-form" (click)="editing.set(!editing())">
           {{ editing() ? 'Done' : 'Edit' }}
         </button>
       }
@@ -86,8 +86,8 @@
   <section class="results" aria-labelledby="result-heading">
     <h2 id="result-heading" class="sr-only">Plan</h2>
     @if (view(); as v) {
-      <article class="card">
-        <dl class="summary" data-testid="plan-summary">
+      <article class="panel card">
+        <dl class="readouts" data-testid="plan-summary">
           <div>
             <dt>Orbit altitude</dt>
             <dd>{{ v.target }}</dd>
@@ -100,14 +100,14 @@
             <dt>Carrier Δv</dt>
             <dd>{{ v.carrierDeltaV }}</dd>
           </div>
-          <div class="summary-total">
+          <div class="total">
             <dt>Δv per satellite</dt>
             <dd>{{ v.satelliteDeltaV }}</dd>
           </div>
         </dl>
 
         @if (v.problems.length) {
-          <ul class="problems" data-testid="problems">
+          <ul class="callout warning problems" data-testid="problems">
             @for (p of v.problems; track p) {
               <li>{{ p }}</li>
             }

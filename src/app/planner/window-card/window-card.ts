@@ -3,7 +3,7 @@ import { EjectionDiagram } from '../ejection-diagram/ejection-diagram';
 import { SolarSystemDiagram } from '../solar-system-diagram/solar-system-diagram';
 import { aerobrakesAt, calendarOf, nowOf, type Mission } from '../mission';
 import { arrivalExcessSpeed, entrySpeed, periapsisRaiseAfterAerocapture } from '../aerobraking';
-import { describeBurn, formatAngle, formatDeltaV, formatSignedDeltaV } from '../format';
+import { burnParts, formatAngle, formatDeltaV, formatSignedDeltaV } from '../format';
 import { describePhase } from '../solar-system-diagram/solar-system-layout';
 import { formatDate, formatDuration, formatFlightTime, formatShortDate } from '../../astro/game-time';
 import { BODIES } from '../../astro/bodies';
@@ -61,7 +61,7 @@ export class WindowCard {
       departure: formatDate(w.departureTime, calendar),
       departureShort: formatShortDate(w.departureTime, calendar),
       alignment: describePhase(m.destination, m.origin, w.phaseAngle),
-      burn: describeBurn(w.details.ejectionProgradeDeltaV, w.details.ejectionNormalDeltaV),
+      burn: burnParts(w.details.ejectionProgradeDeltaV, w.details.ejectionNormalDeltaV),
       countdown: wait < 1 ? 'now' : this.countdownFrom() ? `${formatDuration(wait, calendar)} ${this.countdownFrom()}` : `in ${formatDuration(wait, calendar)}`,
       total: formatDeltaV(w.deltaV),
       ejection: formatDeltaV(w.transfer.ejectionDeltaV),
